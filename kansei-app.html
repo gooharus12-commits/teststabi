@@ -684,10 +684,20 @@
     document.getElementById('r-cluster-name').textContent = cluster.name;
     document.getElementById('r-cluster-sub').textContent = cluster.sub;
 
-    // No rarity display until real data exists
+    // Build rec data based on my axes
+    recData = buildRecData(axisValues);
+
+    // Find nearest and furthest user
+    const myVec = axisValues;
+    const scored = dummyUsers.map(u => ({
+      ...u, sim: cosineSim(myVec, avgAxes(u.logs))
+    })).sort((a,b) => b.sim - a.sim);
+    const nearest = scored[0];
+    const furthest = scored[scored.length-1];
+
     const rarityEl = document.getElementById('r-rarity');
     rarityEl.className = 'rarity-card fade-in shared';
-    rarityEl.innerHTML = `<div class="rarity-icon">◎</div><div><div class="rarity-title">ログを記録しました</div><div class="rarity-desc">ログが蓄積されると、感性が近い人との共鳴が見えてきます。</div></div>`;
+    rarityEl.innerHTML = `<div class="rarity-icon">◎</div><div><div class="rarity-title">感性が一番近いのは「${nearest.name}」さん（${Math.round(nearest.sim*100)}%）</div><div class="rarity-desc">一番遠いのは「${furthest.name}」さん（${Math.round(furthest.sim*100)}%）。共鳴画面で詳しく見てみましょう。</div></div>`;
 
     const insightMap = {
       '発見探求型':'ワクワクを大切にする旅人です。ログを重ねると、あなたが何に心を動かされるかのパターンが見えてきます。',
@@ -728,7 +738,118 @@
   }
 
   // ---- RECOMMEND DATA ----
-  const recData = [];
+  // 5人のダミーユーザーデータ
+  const dummyUsers = [
+    {
+      name: 'とくやま',
+      logs: [
+        {place:'白川郷', region:'岐阜県', axes:{waku:9,shizu:5,tsunagari:5,share:5}},
+        {place:'富士山', region:'静岡県・山梨県', axes:{waku:9,shizu:1,tsunagari:8,share:9}},
+      ]
+    },
+    {
+      name: 'あきら',
+      logs: [
+        {place:'白川郷', region:'岐阜県', axes:{waku:3,shizu:8,tsunagari:8,share:4}},
+        {place:'富士山', region:'静岡県・山梨県', axes:{waku:4,shizu:3,tsunagari:3,share:6}},
+      ]
+    },
+    {
+      name: 'ひゅーご',
+      logs: [
+        {place:'白川郷', region:'岐阜県', axes:{waku:4,shizu:8,tsunagari:8,share:2}},
+        {place:'富士山', region:'静岡県・山梨県', axes:{waku:9,shizu:3,tsunagari:3,share:9}},
+      ]
+    },
+    {
+      name: '行',
+      logs: [
+        {place:'白川郷', region:'岐阜県', axes:{waku:2,shizu:5,tsunagari:10,share:0}},
+        {place:'富士山', region:'静岡県・山梨県', axes:{waku:10,shizu:5,tsunagari:0,share:2}},
+      ]
+    },
+    {
+      name: 'はると',
+      logs: [
+        {place:'白川郷', region:'岐阜県', axes:{waku:3,shizu:9,tsunagari:7,share:5}},
+        {place:'富士山', region:'静岡県・山梨県', axes:{waku:3,shizu:3,tsunagari:3,share:10}},
+      ]
+    },
+  ];
+
+  // コサイン類似度で感性の近さを計算
+  function cosineSim(a, b) {
+    const keys = ['waku','shizu','tsunagari','share'];
+    const dot = keys.reduce((s,k) => s + a[k]*b[k], 0);
+    const magA = Math.sqrt(keys.reduce((s,k) => s + a[k]*a[k], 0));
+    const magB = Math.sqrt(keys.reduce((s,k) => s + b[k]*b[k], 0));
+    if (!magA || !magB) return 0;
+    return dot / (magA * magB);
+  }
+
+  // ユーザーの全ログの平均ベクトルを計算
+  function avgAxes(logs) {
+    const keys = ['waku','shizu','tsunagari','share'];
+    const avg = {waku:0,shizu:0,tsunagari:0,share:0};
+    logs.forEach(l => keys.forEach(k => avg[k] += l.axes[k]));
+    keys.forEach(k => avg[k] /= logs.length);
+    return avg;
+  }
+
+  // ログ送信後に呼ぶ：近い人・遠い人を計算してrecDataを更新
+  function buildRecData(myAxes) {
+    const myVec = myAxes;
+    // 各ユーザーとの類似度を計算
+    const scored = dummyUsers.map(u => ({
+      ...u,
+      avgVec: avgAxes(u.logs),
+      sim: cosineSim(myVec, avgAxes(u.logs))
+    })).sort((a,b) => b.sim - a.sim);
+
+    // 場所ごとにまとめる
+    const placeMap = {};
+    scored.forEach(u => {
+      const isNear = u.sim > 0.85;
+      u.logs.forEach(l => {
+        if (!placeMap[l.place]) placeMap[l.place] = {
+          name: l.place, region: l.region,
+          axes: l.axes, voices: [], tags: []
+        };
+        const persona = getPersona(u.avgVec);
+        placeMap[l.place].voices.push({
+          type: isNear ? 'near' : 'far',
+          persona,
+          name: u.name,
+          sim: Math.round(u.sim * 100)
+        });
+      });
+    });
+
+    // tagsを付与
+    Object.values(placeMap).forEach(p => {
+      const a = p.axes;
+      if (a.waku >= 7) p.tags.push('waku');
+      if (a.shizu >= 7) p.tags.push('shizu');
+      if (a.tsunagari >= 7) p.tags.push('tsunagari');
+      if (a.share <= 3) p.tags.push('solo');
+      // rarity
+      const nearCount = p.voices.filter(v=>v.type==='near').length;
+      p.rarity = nearCount <= 1
+        ? {type:'rare', label:`${nearCount+1}人だけが近い感性`}
+        : {type:'shared', label:`${nearCount}人が近い感性`};
+    });
+
+    return Object.values(placeMap);
+  }
+
+  function getPersona(vec) {
+    const max = Math.max(vec.waku, vec.shizu, vec.tsunagari);
+    if (max === vec.waku) return 'ワクワクを求める旅人';
+    if (max === vec.shizu) return '落ち着きを大切にする旅人';
+    return '繋がりを感じる旅人';
+  }
+
+  let recData = [];
 
   const axisColors={waku:'var(--accent)',shizu:'var(--blue)',tsunagari:'var(--rose)',share:'var(--purple)'};
   const axisLabels={waku:'ワクワク',shizu:'落ち着き',tsunagari:'繋がり',share:'シェア欲'};
@@ -770,10 +891,9 @@
               <div class="rec-voice-dot"></div>
               <div class="rec-voice-body">
                 <div class="rec-voice-meta">
-                  <span>${v.persona}</span>
-                  <span class="rec-voice-type">${v.type==='near'?'感性が近い':'感性が遠い'}</span>
+                  <span><strong>${v.name}</strong>（${v.persona}）</span>
+                  <span class="rec-voice-type">${v.type==='near'?'感性が近い':'感性が遠い'} ${v.sim}%</span>
                 </div>
-                <div class="rec-voice-text">${v.text}</div>
               </div>
             </div>`).join('')}
         </div>
