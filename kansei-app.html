@@ -1,0 +1,2617 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KANSEI — 感性ログ</title>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=DM+Mono:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --surface: #ffffff;
+    --surface2: #f0ede6;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.04);
+    --text: #1a1814;
+    --text-muted: rgba(26,24,20,0.42);
+    --accent: #b8935a;
+    --accent-glow: rgba(184,147,90,0.10);
+    --rose: #c4626e;
+    --blue: #5a8aaa;
+    --blue-glow: rgba(90,138,170,0.10);
+    --green: #6a9e7a;
+    --green-glow: rgba(106,158,122,0.10);
+    --purple: #8a72b0;
+    /* 7色パステルグラデーション */
+    --grad-waku: linear-gradient(135deg,#fde8c8,#ffd4b8);
+    --grad-shizu: linear-gradient(135deg,#c8dff5,#b8d0f0);
+    --grad-tsunagari: linear-gradient(135deg,#fbc8cc,#f5b8c8);
+    --grad-share: linear-gradient(135deg,#d8c8f5,#cbb8f0);
+    --grad-rainbow: linear-gradient(135deg,#fde8c8,#ffd4d4,#d4c8f5,#c8dff5,#c8f0d4,#f5f0c8,#fde8c8);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:var(--bg); color:var(--text); font-family:'Shippori Mincho',serif; min-height:100vh; overflow-x:hidden; }
+  body::before {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background: radial-gradient(ellipse 70% 50% at 10% 90%,rgba(253,232,200,0.5) 0%,transparent 60%),
+                radial-gradient(ellipse 50% 70% at 90% 10%,rgba(200,223,245,0.5) 0%,transparent 60%),
+                radial-gradient(ellipse 40% 40% at 50% 50%,rgba(216,200,245,0.2) 0%,transparent 70%);
+  }
+
+  /* SCREEN SYSTEM */
+  .screen { position:fixed; inset:0; display:flex; flex-direction:column; opacity:0; pointer-events:none; transform:translateX(28px); transition:opacity 0.32s ease,transform 0.32s ease; z-index:1; }
+  .screen.active { opacity:1; pointer-events:all; transform:translateX(0); }
+  .screen.exit { opacity:0; transform:translateX(-28px); }
+  .screen-body { flex:1; overflow-y:auto; }
+  #fullAxesCard { display:none; }
+  #quickLogCard { display:none; }
+
+  /* SHARED */
+  header { position:sticky; top:0; z-index:50; background:rgba(247,245,240,0.93); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); padding:18px 24px; display:flex; align-items:center; gap:16px; }
+  .back-btn { width:32px; height:32px; border:1px solid var(--border); border-radius:2px; background:transparent; color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px; transition:all 0.2s; flex-shrink:0; }
+  .back-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .header-title { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.25em; color:var(--text-muted); text-transform:uppercase; flex:1; }
+  .logo { font-family:'DM Mono',monospace; font-size:12px; letter-spacing:0.2em; color:var(--accent); }
+  .logo span { color:var(--text-muted); font-style:italic; font-size:11px; }
+
+  .container { position:relative; z-index:1; max-width:680px; margin:0 auto; padding:32px 24px 160px; }
+
+  .section-label { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.3em; color:var(--text-muted); text-transform:uppercase; margin-bottom:20px; display:flex; align-items:center; gap:10px; }
+  .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:28px 28px; margin-bottom:14px; transition:border-color 0.3s; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .card:focus-within { border-color:rgba(184,147,90,0.3); }
+
+  .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:rgba(247,245,240,0.96); backdrop-filter:blur(12px); border-top:1px solid var(--border); display:flex; z-index:1001; }
+  .nav-item { flex:1; padding:13px 8px; text-align:center; cursor:pointer; transition:color 0.2s; color:var(--text-muted); font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; }
+  .nav-item.active { color:var(--accent); }
+  .nav-item .nav-icon { font-size:16px; display:block; margin-bottom:3px; }
+
+  .submit-bar { position:sticky; bottom:0; left:0; right:0; background:rgba(247,245,240,0.98); backdrop-filter:blur(12px); border-top:1px solid var(--border); padding:14px 24px; z-index:99; }
+  .submit-bar-inner { max-width:680px; margin:0 auto; display:flex; gap:12px; align-items:center; }
+  .score-dots { display:flex; gap:5px; }
+  .score-dot { width:6px; height:6px; border-radius:50%; background:var(--border); transition:background 0.3s; }
+  .score-dot.filled { background:var(--accent); }
+
+  .submit-btn { flex:1; background:transparent; border:1px solid var(--accent); color:var(--accent); font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.2em; text-transform:uppercase; padding:14px; cursor:pointer; transition:all 0.3s; position:relative; overflow:hidden; border-radius:4px; }
+  .submit-btn.disabled { border-color:var(--border); color:var(--text-muted); cursor:default; }
+  .submit-btn::before { content:''; position:absolute; inset:0; background:var(--accent); transform:scaleX(0); transform-origin:left; transition:transform 0.3s; z-index:0; }
+  .submit-btn:not(.disabled):hover::before { transform:scaleX(1); }
+  .submit-btn:not(.disabled):hover { color:#fff; }
+  .submit-btn span { position:relative; z-index:1; }
+
+  .live-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--rose); margin-right:6px; animation:pulse 2s infinite; vertical-align:middle; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  .fade-in { opacity:0; transform:translateY(14px); transition:opacity 0.45s ease,transform 0.45s ease; }
+  .fade-in.visible { opacity:1; transform:translateY(0); }
+
+  /* ---- HOME ---- */
+  .home-header { padding:40px 24px 24px; max-width:680px; margin:0 auto; position:relative; z-index:1; }
+  .home-greeting { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.25em; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px; }
+  .home-title { font-size:27px; line-height:1.55; letter-spacing:0.02em; margin-bottom:6px; }
+  .home-sub { font-size:13px; color:var(--text-muted); letter-spacing:0.04em; line-height:1.75; margin-top:8px; }
+
+  .home-actions { max-width:680px; margin:0 auto; padding:0 24px; position:relative; z-index:1; display:flex; flex-direction:column; gap:10px; }
+  .action-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:22px 26px; cursor:pointer; transition:all 0.22s; display:flex; align-items:center; gap:18px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .action-card:first-child { background:var(--grad-waku); }
+  .action-card:nth-child(2) { background:var(--grad-shizu); }
+  .action-card:nth-child(3) { background:var(--grad-share); }
+  .action-card:hover { transform:translateX(3px); box-shadow:0 4px 16px rgba(0,0,0,0.08); }
+  .action-card.disabled { opacity:0.5; cursor:default; }
+  .action-card.disabled:hover { transform:none; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .action-icon { font-size:26px; flex-shrink:0; }
+  .action-body { flex:1; }
+  .action-title { font-size:16px; letter-spacing:0.02em; margin-bottom:3px; }
+  .action-desc { font-size:12px; color:var(--text-muted); letter-spacing:0.03em; line-height:1.6; }
+  .action-arrow { font-family:'DM Mono',monospace; color:var(--text-muted); font-size:15px; transition:color 0.2s; }
+  .action-card:hover .action-arrow { color:var(--accent); }
+  .soon-badge { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.12em; color:var(--text-muted); }
+
+  .stats-row { max-width:680px; margin:14px auto 0; padding:0 24px 130px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; position:relative; z-index:1; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px 14px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .stat-num { font-family:'DM Mono',monospace; font-size:26px; color:var(--accent); line-height:1; margin-bottom:6px; }
+  .stat-label { font-size:11px; color:var(--text-muted); letter-spacing:0.04em; line-height:1.5; }
+
+  /* ---- PLACE LOG ---- */
+  .place-search-wrap { position:relative; }
+  .place-search-icon { position:absolute; left:0; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:13px; }
+  .place-input { width:100%; background:transparent; border:none; border-bottom:1px solid var(--border); color:var(--text); font-family:'Shippori Mincho',serif; font-size:20px; padding:8px 0 8px 22px; outline:none; transition:border-color 0.3s; letter-spacing:0.02em; }
+  .place-input::placeholder { color:var(--text-muted); font-size:18px; }
+  .place-input:focus { border-color:rgba(200,169,126,0.32); }
+
+  .suggestions { margin-top:8px; display:none; }
+  .suggestions.visible { display:block; }
+  .suggestion-item { padding:11px 0; border-bottom:1px solid var(--border); cursor:pointer; display:flex; align-items:center; gap:11px; transition:color 0.2s; color:var(--text-muted); }
+  .suggestion-item:last-child { border-bottom:none; }
+  .suggestion-item:hover { color:var(--text); }
+  .suggestion-item .s-name { font-size:15px; letter-spacing:0.02em; }
+  .suggestion-item .s-region { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-muted); margin-left:auto; letter-spacing:0.1em; }
+
+  .selected-place { display:none; align-items:center; gap:12px; padding-top:16px; }
+  .selected-place.visible { display:flex; }
+  .place-name-big { font-size:21px; letter-spacing:0.02em; }
+  .place-region-tag { font-family:'DM Mono',monospace; font-size:11px; color:var(--text-muted); letter-spacing:0.14em; margin-top:3px; }
+  .change-btn { margin-left:auto; background:transparent; border:1px solid var(--border); color:var(--text-muted); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; padding:6px 11px; cursor:pointer; transition:all 0.2s; border-radius:1px; }
+  .change-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* AXIS SLIDERS */
+  .axis-list { display:flex; flex-direction:column; gap:30px; }
+  .axis-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px; gap:8px; }
+  .axis-name-wrap { flex:1; }
+  .axis-name { font-size:15px; letter-spacing:0.04em; display:block; margin-bottom:3px; }
+  .axis-desc { font-size:11px; color:var(--text-muted); letter-spacing:0.03em; line-height:1.55; }
+  .axis-value { font-family:'DM Mono',monospace; font-size:14px; min-width:22px; text-align:right; transition:color 0.2s; flex-shrink:0; margin-top:2px; }
+  .axis-value.zero { color:var(--text-muted) !important; }
+
+  .axis-track { position:relative; height:3px; background:var(--border); border-radius:99px; cursor:pointer; margin:10px 0 7px; touch-action:none; }
+  .axis-fill { height:100%; border-radius:99px; width:0%; pointer-events:none; }
+  .axis-thumb { position:absolute; top:50%; transform:translate(-50%,-50%); width:17px; height:17px; border-radius:50%; background:#fff; border:2px solid; left:0%; transition:box-shadow 0.2s; pointer-events:none; }
+  .axis-track:hover .axis-thumb, .axis-track.dragging .axis-thumb { box-shadow:0 0 0 5px rgba(184,147,90,0.15); }
+  .axis-labels { display:flex; justify-content:space-between; font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); letter-spacing:0.09em; }
+
+  /* axis colors */
+  /* 軸1：高揚↔安らぎ（両端スライダー） */
+  .axis-item[data-axis="koyo"] { background:linear-gradient(135deg,#fdf0e0,#e8f4f8); border-radius:8px; padding:16px; margin-bottom:10px; }
+  .axis-item[data-axis="koyo"] .axis-fill { background:linear-gradient(90deg,#7ea8c8,#c8a97e); }
+  .axis-item[data-axis="koyo"] .axis-thumb { border-color:var(--accent); }
+  .axis-item[data-axis="koyo"] .axis-value { color:var(--accent); }
+  /* 軸2：ひとり↔みんな（両端スライダー） */
+  .axis-item[data-axis="solo"] { background:linear-gradient(135deg,#e8f4f8,#f0e8f4); border-radius:8px; padding:16px; margin-bottom:10px; }
+  .axis-item[data-axis="solo"] .axis-fill { background:linear-gradient(90deg,#5a8aaa,#a891c8); }
+  .axis-item[data-axis="solo"] .axis-thumb { border-color:var(--blue); }
+  .axis-item[data-axis="solo"] .axis-value { color:var(--blue); }
+  /* 軸3：あたたかさ（強度スライダー） */
+  .axis-item[data-axis="atatakasa"] { background:var(--grad-tsunagari); border-radius:8px; padding:16px; margin-bottom:10px; }
+  .axis-item[data-axis="atatakasa"] .axis-fill { background:linear-gradient(90deg,var(--rose),#e8a090); }
+  .axis-item[data-axis="atatakasa"] .axis-thumb { border-color:var(--rose); }
+  .axis-item[data-axis="atatakasa"] .axis-value { color:var(--rose); }
+
+  /* TEXT / TAGS (optional) */
+  .optional-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.18em; color:var(--text-muted); text-transform:uppercase; margin-left:8px; opacity:0.7; }
+  .log-textarea { width:100%; background:transparent; border:none; color:var(--text); font-family:'Shippori Mincho',serif; font-size:15px; line-height:1.9; padding:0; resize:none; outline:none; min-height:80px; letter-spacing:0.03em; }
+  .log-textarea::placeholder { color:var(--text-muted); }
+  .char-count { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-muted); text-align:right; margin-top:10px; letter-spacing:0.1em; }
+
+  .tag-row { display:flex; flex-wrap:wrap; gap:7px; }
+  .tag { background:transparent; border:1px solid var(--border); border-radius:99px; padding:6px 13px; font-size:12px; color:var(--text-muted); cursor:pointer; transition:all 0.2s; font-family:'Shippori Mincho',serif; letter-spacing:0.04em; }
+  .tag:hover { border-color:var(--accent); color:var(--text); }
+  .tag.active { background:var(--accent-glow); border-color:var(--accent); color:var(--accent); }
+
+  /* ---- RESULT ---- */
+  .result-hero { text-align:center; margin-bottom:40px; }
+  .result-icon { font-size:34px; margin-bottom:18px; animation:float 3s ease-in-out infinite; display:block; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+  .result-place { font-size:21px; letter-spacing:0.03em; margin-bottom:4px; }
+  .result-time { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-muted); letter-spacing:0.2em; }
+
+  .resonance-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:26px 28px; margin-bottom:13px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .resonance-label { font-size:12px; color:var(--text-muted); margin-bottom:8px; letter-spacing:0.04em; }
+  .resonance-number { font-family:'DM Mono',monospace; font-size:60px; color:var(--accent); line-height:1; display:flex; align-items:baseline; gap:7px; }
+  .resonance-number .unit { font-size:15px; color:var(--text-muted); }
+  .resonance-delta { font-family:'DM Mono',monospace; font-size:11px; color:var(--rose); margin-top:5px; }
+  .resonance-bar-wrap { height:2px; background:var(--border); border-radius:99px; margin:14px 0 0; overflow:hidden; }
+  .resonance-bar { height:100%; background:linear-gradient(90deg,var(--accent),var(--rose)); width:0; transition:width 1.2s cubic-bezier(0.16,1,0.3,1); }
+
+  /* Rarity badge */
+  .rarity-card { border-radius:10px; padding:18px 24px; margin-bottom:13px; display:flex; align-items:flex-start; gap:14px; }
+  .rarity-card.rare { background:rgba(184,147,90,0.08); border:1px solid rgba(184,147,90,0.2); }
+  .rarity-card.shared { background:rgba(90,138,170,0.08); border:1px solid rgba(90,138,170,0.18); }
+  .rarity-icon { font-size:22px; flex-shrink:0; margin-top:1px; }
+  .rarity-title { font-size:14px; letter-spacing:0.03em; margin-bottom:4px; }
+  .rarity-desc { font-size:12px; color:var(--text-muted); line-height:1.7; letter-spacing:0.02em; }
+
+  .cluster-card { background:rgba(184,147,90,0.06); border:1px solid rgba(184,147,90,0.16); border-radius:10px; padding:18px 22px; margin-bottom:13px; }
+  .cluster-name { font-size:17px; color:var(--accent); margin-bottom:4px; }
+  .cluster-sub { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-muted); letter-spacing:0.1em; line-height:1.6; }
+
+  .souls-label { font-size:12px; color:var(--text-muted); margin-bottom:11px; letter-spacing:0.04em; }
+  .souls-row { display:flex; gap:4px; flex-wrap:wrap; }
+  .soul-dot { width:7px; height:7px; border-radius:50%; background:var(--border); }
+  .soul-dot.lit { background:var(--accent); opacity:0.65; }
+  .soul-dot.lit:nth-child(3n) { background:var(--rose); opacity:0.55; }
+  .soul-dot.lit:nth-child(5n) { background:var(--blue); opacity:0.5; }
+
+  .insight-card { background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:22px 26px; margin-bottom:13px; font-size:14px; line-height:1.9; color:var(--text-muted); letter-spacing:0.03em; }
+  .insight-card strong { color:var(--text); font-weight:500; }
+
+  .result-actions { display:flex; gap:10px; margin-top:6px; }
+  .result-btn { flex:1; background:transparent; border:1px solid var(--border); color:var(--text-muted); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; padding:13px; cursor:pointer; transition:all 0.2s; text-transform:uppercase; }
+  .result-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .result-btn.primary { border-color:var(--accent); color:var(--accent); }
+
+  /* ---- RECOMMEND ---- */
+  .rec-intro { background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:22px 26px; margin-bottom:18px; display:flex; align-items:flex-start; gap:14px; }
+  .rec-cluster-badge { background:var(--accent-glow); border:1px solid rgba(200,169,126,0.22); border-radius:2px; padding:10px 13px; flex-shrink:0; text-align:center; }
+  .rec-cluster-badge .badge-icon { font-size:18px; display:block; margin-bottom:4px; }
+  .rec-cluster-badge .badge-label { font-family:'DM Mono',monospace; font-size:9px; color:var(--accent); letter-spacing:0.1em; line-height:1.4; }
+  .rec-intro-title { font-size:14px; color:var(--text); margin-bottom:4px; letter-spacing:0.02em; }
+  .rec-intro-sub { font-size:12px; color:var(--text-muted); line-height:1.75; letter-spacing:0.02em; }
+
+  .filter-tabs { display:flex; gap:7px; margin-bottom:18px; overflow-x:auto; padding-bottom:3px; scrollbar-width:none; }
+  .filter-tabs::-webkit-scrollbar { display:none; }
+  .filter-tab { background:transparent; border:1px solid var(--border); border-radius:99px; padding:6px 15px; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.13em; color:var(--text-muted); cursor:pointer; white-space:nowrap; transition:all 0.2s; text-transform:uppercase; }
+  .filter-tab.active { background:var(--accent-glow); border-color:var(--accent); color:var(--accent); }
+
+  /* Rec card */
+  .rec-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; margin-bottom:12px; overflow:hidden; cursor:pointer; transition:all 0.22s; animation:fadeUpCard 0.4s ease both; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .rec-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.08); transform:translateX(3px); }
+  @keyframes fadeUpCard { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+  .rec-card-top { padding:18px 22px 14px; display:flex; align-items:flex-start; gap:14px; }
+  .rec-card-body { flex:1; min-width:0; }
+  .rec-place-name { font-size:18px; letter-spacing:0.02em; margin-bottom:2px; }
+  .rec-place-region { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-muted); letter-spacing:0.13em; margin-bottom:10px; }
+
+  /* Rarity mini badge on rec card */
+  .rec-rarity-badge { display:inline-flex; align-items:center; gap:5px; border-radius:99px; padding:4px 11px; font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.1em; }
+  .rec-rarity-badge.rare { background:rgba(200,169,126,0.08); border:1px solid rgba(200,169,126,0.18); color:var(--accent); }
+  .rec-rarity-badge.shared { background:rgba(126,168,200,0.08); border:1px solid rgba(126,168,200,0.18); color:var(--blue); }
+
+  /* Axes mini */
+  .rec-axes { padding:0 22px 14px; display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  .rec-axis-row { display:flex; flex-direction:column; gap:4px; }
+  .rec-axis-head { display:flex; justify-content:space-between; font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); letter-spacing:0.08em; }
+  .rec-axis-track { height:2px; background:var(--border); border-radius:99px; overflow:hidden; }
+  .rec-axis-fill { height:100%; border-radius:99px; }
+
+  /* Voices */
+  .rec-voices { border-top:1px solid var(--border); padding:0; }
+  .rec-voice { padding:14px 22px; border-bottom:1px solid var(--border); display:flex; gap:11px; align-items:flex-start; }
+  .rec-voice:last-child { border-bottom:none; }
+  .rec-voice.near { background:rgba(126,168,200,0.05); }
+  .rec-voice.far { background:rgba(106,158,122,0.06); }
+  .rec-voice.mid { background:transparent; }
+  .rec-voice-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+  .rec-voice.near .rec-voice-dot { background:var(--blue); }
+  .rec-voice.far .rec-voice-dot { background:var(--green); }
+  .rec-voice.mid .rec-voice-dot { background:var(--border); }
+  .rec-voice-body { flex:1; }
+  .rec-voice-meta { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); letter-spacing:0.1em; margin-bottom:5px; display:flex; align-items:center; gap:7px; }
+  .rec-voice-type { border-radius:99px; padding:2px 8px; font-size:9px; font-family:'DM Mono',monospace; letter-spacing:0.08em; }
+  .near .rec-voice-type { background:var(--blue-glow); border:1px solid rgba(126,168,200,0.18); color:var(--blue); }
+  .far .rec-voice-type { background:var(--green-glow); border:1px solid rgba(138,184,154,0.18); color:var(--green); }
+  .rec-voice-text { font-size:13px; color:var(--text-muted); line-height:1.75; letter-spacing:0.02em; }
+  .rec-voice-text em { color:var(--text); font-style:normal; }
+
+  .voice-legend { display:flex; gap:16px; margin-bottom:16px; }
+  .legend-item { display:flex; align-items:center; gap:6px; font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); letter-spacing:0.1em; }
+  .legend-dot { width:7px; height:7px; border-radius:50%; }
+<style>
+  /* MAP SCREEN */
+  .map-container { flex:1; position:relative; min-height:0; overflow:hidden; padding-bottom:56px; }
+  #map { position:absolute; inset:0; width:100%; height:100%; }
+  .map-popup { font-family:'Shippori Mincho',serif; }
+  .map-popup-place { font-size:15px; color:#e8e4dc; margin-bottom:8px; font-weight:500; }
+  .map-popup-axis { display:flex; justify-content:space-between; font-size:11px; color:rgba(232,228,220,0.6); margin-bottom:4px; }
+  .map-popup-bar { height:2px; background:rgba(255,255,255,0.1); border-radius:99px; margin-bottom:8px; overflow:hidden; }
+  .map-popup-fill { height:100%; border-radius:99px; }
+  .map-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:40px 24px; text-align:center; color:rgba(232,228,220,0.38); font-size:14px; line-height:1.9; gap:12px; }
+  .map-empty-icon { font-size:32px; opacity:0.3; }
+  .kansei-popup .leaflet-popup-content-wrapper { background:transparent; box-shadow:none; padding:0; border-radius:4px; }
+  .kansei-popup .leaflet-popup-content { margin:0; }
+  .kansei-popup .leaflet-popup-tip-container { display:none; }
+
+  /* PERSONA MATRIX */
+  .matrix-dot { position:absolute;transform:translate(-50%,-50%);text-align:center;cursor:pointer;transition:transform 0.18s; }
+  .matrix-dot:hover { transform:translate(-50%,-50%) scale(1.15); }
+  .matrix-dot-icon { font-size:18px;line-height:1; }
+  .matrix-dot-label { font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);letter-spacing:0.07em;margin-top:2px;white-space:nowrap; }
+  .matrix-dot.is-mine .matrix-dot-icon { filter:drop-shadow(0 0 4px var(--accent)); }
+  .matrix-dot.is-mine .matrix-dot-label { color:var(--accent); }
+
+  /* PERSONA CARD */
+  .persona-card { border-radius:12px;padding:20px 22px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;border:1px solid rgba(0,0,0,0.06);display:flex;align-items:flex-start;gap:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .persona-card:hover { transform:translateX(3px);box-shadow:0 4px 16px rgba(0,0,0,0.08); }
+  .persona-card.is-mine { border-width:2px; }
+  .persona-card-icon { font-size:28px;flex-shrink:0;margin-top:2px; }
+  .persona-card-body { flex:1; }
+  .persona-card-name { font-size:16px;letter-spacing:0.02em;margin-bottom:3px; }
+  .persona-card-keyword { font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;margin-bottom:8px; }
+  .persona-card-desc { font-size:12px;color:var(--text-muted);line-height:1.75;letter-spacing:0.02em; }
+  .persona-mine-badge { display:inline-flex;align-items:center;gap:4px;border-radius:99px;padding:3px 9px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.1em;background:rgba(184,147,90,0.1);border:1px solid rgba(184,147,90,0.25);color:var(--accent);margin-bottom:6px; }
+
+  /* DIAGNOSIS SCREEN */
+  .diag-screen { position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;background:var(--bg);opacity:0;pointer-events:none;transition:opacity 0.4s ease; }
+  .diag-screen.active { opacity:1;pointer-events:all; }
+  .diag-step { display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center; }
+  .diag-step.active { display:flex; }
+  .diag-step-num { font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.25em;color:var(--text-muted);margin-bottom:32px; }
+  .diag-question { font-size:20px;line-height:1.65;letter-spacing:0.02em;margin-bottom:36px;max-width:320px; }
+  .diag-options { width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px; }
+  .diag-option { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 22px;cursor:pointer;text-align:left;font-family:'Shippori Mincho',serif;font-size:14px;letter-spacing:0.02em;line-height:1.6;transition:all 0.18s;box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .diag-option:hover { border-color:var(--accent);background:var(--accent-glow);transform:translateX(4px); }
+  .diag-option.selected { border-color:var(--accent);background:var(--accent-glow); }
+  .diag-progress { display:flex;gap:6px;margin-bottom:28px; }
+  .diag-progress-dot { width:6px;height:6px;border-radius:50%;background:var(--border);transition:background 0.3s; }
+  .diag-progress-dot.done { background:var(--accent); }
+  /* 結果画面 */
+  .diag-result-icon { font-size:56px;margin-bottom:20px;animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  .diag-result-type { font-size:28px;letter-spacing:0.04em;margin-bottom:8px; }
+  .diag-result-keyword { font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--text-muted);margin-bottom:20px; }
+  .diag-result-desc { font-size:13px;line-height:1.9;color:var(--text-muted);max-width:300px;margin-bottom:32px; }
+  .diag-result-note { font-size:12px;line-height:1.9;color:var(--text-muted);opacity:0.7;max-width:280px;margin-bottom:36px;border-top:1px solid var(--border);padding-top:20px; }
+  .diag-start-btn { background:var(--text);color:var(--bg);border:none;border-radius:99px;padding:16px 40px;font-family:'Shippori Mincho',serif;font-size:14px;letter-spacing:0.08em;cursor:pointer;transition:opacity 0.2s; }
+  .diag-start-btn:hover { opacity:0.8; }
+  @keyframes popIn { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
+</style>
+<body>
+
+<!-- DIAGNOSIS -->
+<div class="diag-screen" id="diag-screen">
+
+  <!-- STEP 0: イントロ -->
+  <div class="diag-step active" id="diag-step-0">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.3em;color:var(--text-muted);margin-bottom:40px">KANSEI 感性</div>
+    <div style="font-size:24px;line-height:1.7;letter-spacing:0.02em;margin-bottom:16px;max-width:300px">旅先で、あなたが<br>最初にすることは？</div>
+    <div style="font-size:13px;color:var(--text-muted);line-height:1.9;max-width:280px;margin-bottom:48px">3つの問いに直感で答えると、<br>あなたの感性タイプが見えてきます。<br>正解はありません。</div>
+    <button class="diag-start-btn" onclick="diagNext(1)">はじめる</button>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="diag-step" id="diag-step-1">
+    <div class="diag-progress">
+      <div class="diag-progress-dot done" id="dp-1"></div>
+      <div class="diag-progress-dot" id="dp-2"></div>
+      <div class="diag-progress-dot" id="dp-3"></div>
+    </div>
+    <div class="diag-step-num">Q 1 / 3</div>
+    <div class="diag-question">旅先で、気づいたら<br>足が向いているのは？</div>
+    <div class="diag-options">
+      <div class="diag-option" onclick="diagAnswer(1,'koyo',this)">まだ地図にない路地</div>
+      <div class="diag-option" onclick="diagAnswer(1,'shizu',this)">心が落ち着く、静かな場所</div>
+      <div class="diag-option" onclick="diagAnswer(1,'solo',this)">地元の人が集まる場所</div>
+      <div class="diag-option" onclick="diagAnswer(1,'atatakasa',this)">写真を撮りたくなる景色</div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="diag-step" id="diag-step-2">
+    <div class="diag-progress">
+      <div class="diag-progress-dot done"></div>
+      <div class="diag-progress-dot done" id="dp-2b"></div>
+      <div class="diag-progress-dot" id="dp-3b"></div>
+    </div>
+    <div class="diag-step-num">Q 2 / 3</div>
+    <div class="diag-question">旅から帰って、<br>一番残っているのは？</div>
+    <div class="diag-options">
+      <div class="diag-option" onclick="diagAnswer(2,'koyo',this)">予想外の発見・驚き</div>
+      <div class="diag-option" onclick="diagAnswer(2,'shizu',this)">あの静けさ、あの空気</div>
+      <div class="diag-option" onclick="diagAnswer(2,'atatakasa',this)">あの人の顔、あの会話</div>
+      <div class="diag-option" onclick="diagAnswer(2,'solo',this)">あの景色を誰かに見せたい</div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="diag-step" id="diag-step-3">
+    <div class="diag-progress">
+      <div class="diag-progress-dot done"></div>
+      <div class="diag-progress-dot done"></div>
+      <div class="diag-progress-dot done"></div>
+    </div>
+    <div class="diag-step-num">Q 3 / 3</div>
+    <div class="diag-question">「いい旅だった」と<br>思う瞬間は？</div>
+    <div class="diag-options">
+      <div class="diag-option" onclick="diagAnswer(3,'koyo',this)">知らなかった自分に気づいた時</div>
+      <div class="diag-option" onclick="diagAnswer(3,'shizu',this)">何も考えなくていい時間があった時</div>
+      <div class="diag-option" onclick="diagAnswer(3,'atatakasa',this)">誰かとわかりあえた気がした時</div>
+      <div class="diag-option" onclick="diagAnswer(3,'solo',this)">この体験を持ち帰れると思った時</div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="diag-step" id="diag-step-result">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.3em;color:var(--text-muted);margin-bottom:32px">あなたの感性タイプ</div>
+    <div class="diag-result-icon" id="diag-r-icon">✦</div>
+    <div class="diag-result-type" id="diag-r-type">発見者</div>
+    <div class="diag-result-keyword" id="diag-r-keyword">EXPLORER · WONDER</div>
+    <div class="diag-result-desc" id="diag-r-desc">未知の場所に向かう直感と、驚きを楽しむ感性を持っています。</div>
+    <div class="diag-result-note">これはまだ入口です。<br>ログを重ねるたびに、あなたの感性の輪郭がくっきりしてきます。</div>
+    <button class="diag-start-btn" onclick="finishDiagnosis()">最初の場所をログする →</button>
+  </div>
+
+</div>
+
+<!-- HOME -->
+<div class="screen active" id="screen-home">
+  <header>
+    <div class="logo">KANSEI <span>感性</span></div>
+    <div style="flex:1"></div>
+    <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted)"><span class="live-dot"></span>2,847 ログ中</div>
+  </header>
+  <div class="screen-body">
+    <div class="home-header">
+      <div class="home-greeting">Sunday, March 2026</div>
+      <div class="home-title">あなたの旅を、<br>感性でログする。</div>
+      <div class="home-sub">観光地で感じたことを記録すると、<br>あなただけの感性地図が育ちます。</div>
+    </div>
+    <div class="home-actions">
+      <div class="action-card" onclick="goTo('screen-place-log')">
+        <div class="action-icon">◎</div>
+        <div class="action-body">
+          <div class="action-title">場所をログする</div>
+          <div class="action-desc">旅先で感じたことを4軸で記録する</div>
+        </div>
+        <div class="action-arrow">→</div>
+      </div>
+      <div class="action-card" id="home-rec-card" onclick="openRecommend()">
+        <div class="action-icon">✦</div>
+        <div class="action-body">
+          <div class="action-title">共鳴を見る</div>
+          <div class="action-desc">感性が近い人のおすすめ旅先を見る</div>
+        </div>
+        <div class="action-arrow">→</div>
+      </div>
+      <div class="action-card" onclick="openReport()" style="background:linear-gradient(135deg,#e8f5e8,#d4ecd4)">
+        <div class="action-icon">⌁</div>
+        <div class="action-body">
+          <div class="action-title">感性レポート</div>
+          <div class="action-desc">週次で届く、あなたの感性分析</div>
+        </div>
+        <div class="action-arrow">→</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="stat-logs">0</div><div class="stat-label">ログした<br>場所</div></div>
+      <div class="stat-card" id="stat-cluster-card" onclick="openPersonaList()" style="cursor:pointer;position:relative;min-height:72px">
+        <div id="stat-type-display">
+          <div class="stat-num" id="stat-cluster" style="font-size:13px;line-height:1.3">—</div>
+          <div class="stat-label">あなたの<br>タイプ <span style="font-size:9px">▸</span></div>
+        </div>
+      </div>
+      <div class="stat-card"><div class="stat-num" id="stat-resonance">0</div><div class="stat-label">共鳴した<br>人</div></div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item active"><span class="nav-icon">⌂</span>ホーム</div>
+    <div class="nav-item" onclick="goTo('screen-place-log')"><span class="nav-icon">◎</span>ログ</div>
+    <div class="nav-item" onclick="openSearch()"><span class="nav-icon">⊙</span>探す</div>
+    <div class="nav-item" onclick="openRecommend()"><span class="nav-icon">✦</span>共鳴</div>
+    <div class="nav-item" onclick="openMap()"><span class="nav-icon">○</span>軌跡</div>
+  </div>
+</div>
+
+
+<!-- PLACE LOG -->
+<div class="screen" id="screen-place-log">
+  <header>
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="header-title">場所ログ</div>
+    <div class="logo">KANSEI</div>
+  </header>
+  <div class="screen-body">
+  <div class="container">
+
+    <div class="card">
+      <div class="section-label">あなたの名前</div>
+      <input type="text" class="place-input" id="nameInput" placeholder="名前を入力（例：とくやま）" oninput="updateSubmitState()" autocomplete="off" style="width:100%;padding:12px 0;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'Shippori Mincho',serif;font-size:15px;outline:none;">
+    </div>
+
+    <div class="card">
+      <div class="section-label">場所</div>
+      <div id="searchArea">
+        <div class="place-search-wrap" style="display:flex;align-items:center;gap:10px">
+          <span class="place-search-icon">◎</span>
+          <input type="text" class="place-input" id="placeInput" placeholder="観光地・場所名を入力" oninput="onPlaceInput(this.value)" autocomplete="off" style="flex:1">
+          <button id="gpsBtn" onclick="getGpsPlace()" title="現在地から探す" style="flex-shrink:0;background:transparent;border:1px solid var(--border);border-radius:4px;padding:7px 10px;cursor:pointer;font-size:13px;color:var(--text-muted);transition:all 0.2s;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;white-space:nowrap">⊕ 現在地</button>
+        </div>
+        <div id="gpsStatus" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:0.1em;margin-top:6px;display:none"></div>
+        <div class="suggestions" id="suggestions"></div>
+      </div>
+      <div class="selected-place" id="selectedPlace">
+        <div>
+          <div class="place-name-big" id="placeName"></div>
+          <div class="place-region-tag" id="placeRegion"></div>
+        </div>
+        <button class="change-btn" onclick="changPlace()">変更</button>
+      </div>
+    </div>
+
+    <div class="card" id="quickLogCard" style="display:none;background:linear-gradient(135deg,#f0ede6,#ebe7de);border:1px dashed rgba(184,147,90,0.3)">
+      <div class="section-label">クイック感性メモ <span class="optional-label">後でフル入力も可</span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px" id="quickMoodGrid">
+        <button class="quick-mood" data-koyo="8" data-solo="3" data-atatakasa="4" onclick="applyQuickMood(this)" style="background:var(--grad-waku);border:1px solid rgba(184,147,90,0.2);border-radius:8px;padding:12px 6px;cursor:pointer;text-align:center;transition:all 0.2s">
+          <div style="font-size:20px">✦</div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:0.1em;margin-top:4px">高揚した</div>
+        </button>
+        <button class="quick-mood" data-koyo="2" data-solo="2" data-atatakasa="4" onclick="applyQuickMood(this)" style="background:var(--grad-shizu);border:1px solid rgba(90,138,170,0.2);border-radius:8px;padding:12px 6px;cursor:pointer;text-align:center;transition:all 0.2s">
+          <div style="font-size:20px">◌</div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:0.1em;margin-top:4px">安らいだ</div>
+        </button>
+        <button class="quick-mood" data-koyo="5" data-solo="8" data-atatakasa="9" onclick="applyQuickMood(this)" style="background:var(--grad-tsunagari);border:1px solid rgba(196,98,110,0.2);border-radius:8px;padding:12px 6px;cursor:pointer;text-align:center;transition:all 0.2s">
+          <div style="font-size:20px">◎</div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:0.1em;margin-top:4px">温かかった</div>
+        </button>
+        <button class="quick-mood" data-koyo="7" data-solo="9" data-atatakasa="7" onclick="applyQuickMood(this)" style="background:var(--grad-share);border:1px solid rgba(138,114,176,0.2);border-radius:8px;padding:12px 6px;cursor:pointer;text-align:center;transition:all 0.2s">
+          <div style="font-size:20px">⊙</div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:0.1em;margin-top:4px">みんなと来たい</div>
+        </button>
+      </div>
+      <div style="text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:0.1em">タップで即スコア設定 → 後でスライダー調整も可</div>
+    </div>
+
+    <div class="card" style="padding:14px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;color:var(--text-muted);text-transform:uppercase">入力モード</div>
+        <div style="display:flex;gap:6px">
+          <button id="modeQuick" onclick="setLogMode('quick')" style="background:var(--accent-glow);border:1px solid var(--accent);color:var(--accent);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;padding:5px 11px;cursor:pointer;border-radius:99px;transition:all 0.2s">クイック</button>
+          <button id="modeFull" onclick="setLogMode('full')" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;padding:5px 11px;cursor:pointer;border-radius:99px;transition:all 0.2s">フル入力</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="fullAxesCard">
+      <div class="section-label">感性評価</div>
+      <div class="axis-list">
+
+        <div class="axis-item" data-axis="koyo">
+          <div class="axis-header">
+            <div class="axis-name-wrap">
+              <span class="axis-name">高揚 ↔ 安らぎ</span>
+              <span class="axis-desc">興奮・発見・驚き　または　静けさ・回復・ほっとする</span>
+            </div>
+            <div class="axis-value zero" id="val-koyo">—</div>
+          </div>
+          <div class="axis-track" id="track-koyo" onmousedown="startDrag(event,'koyo')" ontouchstart="startDrag(event,'koyo')">
+            <div class="axis-fill" id="fill-koyo"></div>
+            <div class="axis-thumb" id="thumb-koyo"></div>
+          </div>
+          <div class="axis-labels"><span>安らぎ</span><span>高揚</span></div>
+        </div>
+
+        <div class="axis-item" data-axis="solo">
+          <div class="axis-header">
+            <div class="axis-name-wrap">
+              <span class="axis-name">ひとり ↔ みんなと</span>
+              <span class="axis-desc">この旅、ひとりで来たかった？それとも誰かと？</span>
+            </div>
+            <div class="axis-value zero" id="val-solo">—</div>
+          </div>
+          <div class="axis-track" id="track-solo" onmousedown="startDrag(event,'solo')" ontouchstart="startDrag(event,'solo')">
+            <div class="axis-fill" id="fill-solo"></div>
+            <div class="axis-thumb" id="thumb-solo"></div>
+          </div>
+          <div class="axis-labels"><span>ひとりがよかった</span><span>みんなと来たかった</span></div>
+        </div>
+
+        <div class="axis-item" data-axis="atatakasa">
+          <div class="axis-header">
+            <div class="axis-name-wrap">
+              <span class="axis-name">あたたかさ</span>
+              <span class="axis-desc">人・場所・自然… 何かに心が開いた感覚</span>
+            </div>
+            <div class="axis-value zero" id="val-atatakasa">—</div>
+          </div>
+          <div class="axis-track" id="track-atatakasa" onmousedown="startDrag(event,'atatakasa')" ontouchstart="startDrag(event,'atatakasa')">
+            <div class="axis-fill" id="fill-atatakasa"></div>
+            <div class="axis-thumb" id="thumb-atatakasa"></div>
+          </div>
+          <div class="axis-labels"><span>感じなかった</span><span>深く感じた</span></div>
+        </div>
+
+      </div>
+    </div><!-- end fullAxesCard -->
+
+    <div class="card">
+      <div class="section-label">ひとこと <span class="optional-label">任意</span></div>
+      <textarea class="log-textarea" id="logText" rows="3" placeholder="ここで感じたことを、ひとことでも。" oninput="updateCharCount()"></textarea>
+      <div class="char-count"><span id="charCount">0</span> / 200</div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">キーワード <span class="optional-label">任意</span></div>
+      <div class="tag-row">
+        <button class="tag" onclick="toggleTag(this)">朝が良かった</button>
+        <button class="tag" onclick="toggleTag(this)">光が美しかった</button>
+        <button class="tag" onclick="toggleTag(this)">人が少なかった</button>
+        <button class="tag" onclick="toggleTag(this)">時間を忘れた</button>
+        <button class="tag" onclick="toggleTag(this)">温泉</button>
+        <button class="tag" onclick="toggleTag(this)">自然の中</button>
+        <button class="tag" onclick="toggleTag(this)">また一人で来たい</button>
+        <button class="tag" onclick="toggleTag(this)">地元の人と話せた</button>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+    <div class="submit-bar-inner" style="max-width:100%;padding:0;">
+      <div class="score-dots" id="scoreDots"></div>
+      <button class="submit-btn disabled" id="submitBtn" onclick="submitLog()">
+        <span id="submitLabel">場所を選んでください</span>
+      </button>
+    </div>
+
+  </div>
+  </div><!-- end screen-body -->
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('screen-home')"><span class="nav-icon">⌂</span>ホーム</div>
+    <div class="nav-item active"><span class="nav-icon">◎</span>ログ</div>
+    <div class="nav-item" onclick="openSearch()"><span class="nav-icon">⊙</span>探す</div>
+    <div class="nav-item" onclick="openRecommend()"><span class="nav-icon">✦</span>共鳴</div>
+    <div class="nav-item" onclick="openMap()"><span class="nav-icon">○</span>軌跡</div>
+  </div>
+</div>
+
+
+<!-- RESULT -->
+<div class="screen" id="screen-result">
+  <header>
+    <button class="back-btn" onclick="goTo('screen-home')">←</button>
+    <div class="header-title">感性レポート</div>
+    <div class="logo">KANSEI</div>
+  </header>
+  <div class="screen-body">
+  <div class="container">
+    <div class="result-hero fade-in" id="r-hero">
+      <span class="result-icon">✦</span>
+      <div class="result-place" id="r-place"></div>
+      <div class="result-time" id="r-time"></div>
+    </div>
+
+    <div class="resonance-card fade-in" id="r-resonance">
+      <div class="resonance-label">あなたの感性に共鳴している人</div>
+      <div class="resonance-number"><span id="r-count">0</span><span class="unit">人</span></div>
+      <div class="resonance-delta" id="r-delta"></div>
+      <div class="resonance-bar-wrap"><div class="resonance-bar" id="r-bar"></div></div>
+    </div>
+
+    <div class="rarity-card fade-in" id="r-rarity"></div>
+
+    <div class="cluster-card fade-in" id="r-cluster">
+      <div class="cluster-name" id="r-cluster-name"></div>
+      <div class="cluster-sub" id="r-cluster-sub"></div>
+    </div>
+
+    <div class="resonance-card fade-in" id="r-souls" style="margin-bottom:13px">
+      <div class="souls-label">同じ感性を持つ人たち（今日）</div>
+      <div class="souls-row" id="r-souls-row"></div>
+    </div>
+
+    <div class="insight-card fade-in" id="r-insight"></div>
+
+    <div class="result-actions fade-in" id="r-actions">
+      <button class="result-btn" onclick="goTo('screen-home')">ホームへ</button>
+      <button class="result-btn primary" onclick="resetAndLog()">続けてログ →</button>
+    </div>
+  </div>
+  </div><!-- end screen-body -->
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('screen-home')"><span class="nav-icon">⌂</span>ホーム</div>
+    <div class="nav-item active"><span class="nav-icon">◎</span>ログ</div>
+    <div class="nav-item" onclick="openSearch()"><span class="nav-icon">⊙</span>探す</div>
+    <div class="nav-item" onclick="openRecommend()"><span class="nav-icon">✦</span>共鳴</div>
+    <div class="nav-item" onclick="openMap()"><span class="nav-icon">○</span>軌跡</div>
+  </div>
+</div>
+
+
+<!-- RECOMMEND -->
+<div class="screen" id="screen-recommend">
+  <header>
+    <button class="back-btn" onclick="goTo('screen-home')">←</button>
+    <div class="header-title">共鳴レコメンド</div>
+    <div class="logo">KANSEI</div>
+  </header>
+  <div class="screen-body">
+  <div class="container">
+    <div class="rec-intro">
+      <div class="rec-cluster-badge" id="rec-cluster-badge">
+        <span class="badge-icon" id="rec-badge-icon">✦</span>
+        <div class="badge-label" id="rec-badge-label">—</div>
+      </div>
+      <div class="rec-intro-text">
+        <div class="rec-intro-title">あなたの感性タイプに近い人たちのログから</div>
+        <div class="rec-intro-sub">星の数ではなく、<strong style="color:var(--text)">価値観の近さ</strong>で選ばれた場所です。3つ以上のスポットで評価軸が似ている人のみを参照しています。</div>
+      </div>
+    </div>
+
+    <div class="voice-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>感性が近い人の声</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>感性が遠い人の声</div>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="filterRec(this,'all')">すべて</button>
+      <button class="filter-tab" onclick="filterRec(this,'koyo')">高揚</button>
+      <button class="filter-tab" onclick="filterRec(this,'shizu')">安らぎ</button>
+      <button class="filter-tab" onclick="filterRec(this,'atatakasa')">あたたかい</button>
+      <button class="filter-tab" onclick="filterRec(this,'solo')">ひとり向き</button>
+    </div>
+
+    <div id="recList"></div>
+  </div>
+  </div><!-- end screen-body -->
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('screen-home')"><span class="nav-icon">⌂</span>ホーム</div>
+    <div class="nav-item" onclick="goTo('screen-place-log')"><span class="nav-icon">◎</span>ログ</div>
+    <div class="nav-item" onclick="openSearch()"><span class="nav-icon">⊙</span>探す</div>
+    <div class="nav-item active"><span class="nav-icon">✦</span>共鳴</div>
+    <div class="nav-item" onclick="openMap()"><span class="nav-icon">○</span>軌跡</div>
+  </div>
+</div>
+
+
+<!-- PERSONA LIST -->
+<div class="screen" id="screen-persona-list">
+  <header>
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="header-title">感性タイプ図鑑</div>
+    <div class="logo">KANSEI</div>
+  </header>
+  <div class="screen-body">
+  <div class="container">
+
+    <div style="margin-bottom:24px">
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.9;letter-spacing:0.03em">
+        4つの感性軸から導かれる、8つの旅人の型。<br>あなたはどのタイプに共鳴しますか。
+      </div>
+    </div>
+
+    <!-- あなたのタイプ（ログがある場合） -->
+    <div id="persona-my-type-section" style="display:none;margin-bottom:24px">
+      <div class="section-label">あなたのタイプ</div>
+      <div id="persona-my-type-card"></div>
+    </div>
+
+    <!-- 感性マトリクス -->
+    <div class="section-label">感性マトリクス</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+      <div style="position:relative;width:100%;padding-bottom:100%">
+        <div style="position:absolute;inset:0">
+          <!-- 軸線 -->
+          <div style="position:absolute;left:50%;top:8px;bottom:8px;width:1px;background:var(--border)"></div>
+          <div style="position:absolute;top:50%;left:8px;right:8px;height:1px;background:var(--border)"></div>
+          <!-- 軸ラベル -->
+          <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:0.1em">動的</div>
+          <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:0.1em">静的</div>
+          <div style="position:absolute;left:0;top:50%;transform:translateY(-50%);font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:0.1em">ひとり</div>
+          <div style="position:absolute;right:0;top:50%;transform:translateY(-50%);font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:0.1em">みんな</div>
+          <!-- タイプドット（位置は 左%,上% ）-->
+          <div class="matrix-dot" style="left:22%;top:18%" onclick="showTypeDetail('発見者')" data-type="発見者">
+            <div class="matrix-dot-icon">✦</div><div class="matrix-dot-label">発見者</div>
+          </div>
+          <div class="matrix-dot" style="left:58%;top:18%" onclick="showTypeDetail('祝祭人')" data-type="祝祭人">
+            <div class="matrix-dot-icon">⊙</div><div class="matrix-dot-label">祝祭人</div>
+          </div>
+          <div class="matrix-dot" style="left:58%;top:38%" onclick="showTypeDetail('エクスプローラー')" data-type="エクスプローラー">
+            <div class="matrix-dot-icon">⊕</div><div class="matrix-dot-label">探索者</div>
+          </div>
+          <div class="matrix-dot" style="left:58%;top:62%" onclick="showTypeDetail('共鳴者')" data-type="共鳴者">
+            <div class="matrix-dot-icon">◎</div><div class="matrix-dot-label">共鳴者</div>
+          </div>
+          <div class="matrix-dot" style="left:58%;top:78%" onclick="showTypeDetail('聖地巡礼者')" data-type="聖地巡礼者">
+            <div class="matrix-dot-icon">◈</div><div class="matrix-dot-label">巡礼者</div>
+          </div>
+          <div class="matrix-dot" style="left:22%;top:62%" onclick="showTypeDetail('余白旅人')" data-type="余白旅人">
+            <div class="matrix-dot-icon">◇</div><div class="matrix-dot-label">余白旅人</div>
+          </div>
+          <div class="matrix-dot" style="left:22%;top:78%" onclick="showTypeDetail('静寂の求道者')" data-type="静寂の求道者">
+            <div class="matrix-dot-icon">◌</div><div class="matrix-dot-label">求道者</div>
+          </div>
+          <div class="matrix-dot" style="left:38%;top:45%" onclick="showTypeDetail('感性バランス型')" data-type="感性バランス型">
+            <div class="matrix-dot-icon">◉</div><div class="matrix-dot-label">バランス</div>
+          </div>
+          <!-- あなたの位置マーカー -->
+          <div id="matrix-my-marker" style="display:none;position:absolute;width:18px;height:18px;border-radius:50%;background:var(--accent);border:2px solid #fff;box-shadow:0 0 0 3px rgba(184,147,90,0.3);transform:translate(-50%,-50%);z-index:10;pointer-events:none"></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);text-align:center;letter-spacing:0.1em">タイプをタップすると詳細が見られます</div>
+    </div>
+
+    <!-- 全タイプカード一覧 -->
+    <div class="section-label">すべてのタイプ</div>
+    <div id="persona-all-cards"></div>
+
+  </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('screen-home')"><span class="nav-icon">⌂</span>ホーム</div>
+    <div class="nav-item" onclick="goTo('screen-place-log')"><span class="nav-icon">◎</span>ログ</div>
+    <div class="nav-item" onclick="openSearch()"><span class="nav-icon">⊙</span>探す</div>
+    <div class="nav-item" onclick="openRecommend()"><span class="nav-icon">✦</span>共鳴</div>
+    <div class="nav-item" onclick="openMap()"><span class="nav-icon">○</span>軌跡</div>
+  </div>
+</div>
+
+
+<!-- MAP -->
+<div class="screen" id="screen-map">
+  <header>
+    <button class="back-btn" onclick="goTo('screen-home')">←</button>
+    <div class="header-title">感性の軌跡</div>
+    <div class="logo">KANSEI</div>
+  </header>
+  <div id="mapArea" class="map-container">
+    <div class="map-empty" id="mapEmpty">
+      <div class="map-empty-icon">◎</div>
+      <div>まだログした場所がありません。<br>場所をログすると、ここに軌跡が残ります。</div>
+    </div>
+    <div id="map"></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('screen-home')"><span class="nav-icon">⌂</span>ホーム</div>
+    <div class="nav-item" onclick="goTo('screen-place-log')"><span class="nav-icon">◎</span>ログ</div>
+    <div class="nav-item" onclick="openSearch()"><span class="nav-icon">⊙</span>探す</div>
+    <div class="nav-item" onclick="openRecommend()"><span class="nav-icon">✦</span>共鳴</div>
+    <div class="nav-item active"><span class="nav-icon">○</span>軌跡</div>
+  </div>
+</div>
+
+
+<!-- SEARCH -->
+<div class="screen" id="screen-search">
+  <header>
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="header-title">場所を探す</div>
+    <div class="logo">KANSEI</div>
+  </header>
+  <div class="screen-body">
+  <div class="container">
+    <div class="card" style="padding:0;overflow:hidden">
+      <input type="text" id="searchPlaceInput" placeholder="地名・観光地名で検索" oninput="filterSearchResults(this.value)"
+        style="width:100%;padding:16px 20px;background:transparent;border:none;color:var(--text);font-family:'Shippori Mincho',serif;font-size:15px;outline:none;border-bottom:1px solid var(--border);">
+      <div style="display:flex;gap:6px;padding:12px 16px;overflow-x:auto;scrollbar-width:none">
+        <button class="filter-tab active" onclick="filterRegion(this,'all')">すべて</button>
+        <button class="filter-tab" onclick="filterRegion(this,'東京')">東京</button>
+        <button class="filter-tab" onclick="filterRegion(this,'京都')">京都</button>
+        <button class="filter-tab" onclick="filterRegion(this,'大阪')">大阪</button>
+        <button class="filter-tab" onclick="filterRegion(this,'神奈川')">神奈川</button>
+        <button class="filter-tab" onclick="filterRegion(this,'静岡')">静岡</button>
+        <button class="filter-tab" onclick="filterRegion(this,'岐阜')">岐阜</button>
+        <button class="filter-tab" onclick="filterRegion(this,'群馬')">群馬</button>
+      </div>
+    </div>
+    <div id="searchResults" style="margin-top:4px"></div>
+  </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('screen-home')"><span class="nav-icon">⌂</span>ホーム</div>
+    <div class="nav-item" onclick="goTo('screen-place-log')"><span class="nav-icon">◎</span>ログ</div>
+    <div class="nav-item active"><span class="nav-icon">⊙</span>探す</div>
+    <div class="nav-item" onclick="openRecommend()"><span class="nav-icon">✦</span>共鳴</div>
+    <div class="nav-item" onclick="openMap()"><span class="nav-icon">○</span>軌跡</div>
+  </div>
+</div>
+
+<!-- PLACE DETAIL -->
+<div class="screen" id="screen-place-detail">
+  <header>
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="header-title" id="detail-place-name">場所詳細</div>
+    <div class="logo">KANSEI</div>
+  </header>
+  <div class="screen-body">
+  <div class="container">
+    <div class="card" id="detail-axes-card" style="margin-bottom:18px">
+      <div class="section-label">感性の平均スコア</div>
+      <div id="detail-axes"></div>
+    </div>
+    <div class="section-label" style="padding:0 2px;margin-bottom:12px">ログした人の声</div>
+    <div id="detail-voices"></div>
+  </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('screen-home')"><span class="nav-icon">⌂</span>ホーム</div>
+    <div class="nav-item" onclick="goTo('screen-place-log')"><span class="nav-icon">◎</span>ログ</div>
+    <div class="nav-item" onclick="openSearch()"><span class="nav-icon">⊙</span>探す</div>
+    <div class="nav-item" onclick="openRecommend()"><span class="nav-icon">✦</span>共鳴</div>
+    <div class="nav-item" onclick="openMap()"><span class="nav-icon">○</span>軌跡</div>
+  </div>
+</div>
+
+
+<!-- REPORT -->
+<div class="screen" id="screen-report">
+  <header>
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="header-title">WEEKLY REPORT</div>
+    <div class="logo">KANSEI</div>
+  </header>
+  <div class="screen-body">
+  <div class="container">
+
+    <div style="margin-bottom:28px">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.25em;color:var(--text-muted);margin-bottom:8px" id="report-week-label"></div>
+      <div style="font-size:22px;line-height:1.55" id="report-headline"></div>
+    </div>
+
+    <!-- 感性スコアカード with radar -->
+    <div style="background:var(--grad-rainbow);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+      <div class="section-label">今週の感性スコア</div>
+      <!-- レーダーチャート：上段中央 -->
+      <div style="display:flex;justify-content:center;margin-bottom:16px">
+        <svg id="radarChart" width="180" height="180" viewBox="0 0 180 180" style="display:block;overflow:visible"></svg>
+      </div>
+      <!-- バー：下段 -->
+      <div id="report-axes"></div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(0,0,0,0.07);font-size:13px;color:var(--text);line-height:1.9" id="report-tendency"></div>
+    </div>
+
+    <!-- 3指標 -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+        <div style="font-family:'DM Mono',monospace;font-size:26px;color:var(--accent)" id="report-log-count">0</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">ログ数</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+        <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);line-height:1.4" id="report-type-name">—</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">感性タイプ</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+        <div style="font-family:'DM Mono',monospace;font-size:26px;color:var(--rose)" id="report-resonance-count">0</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">共鳴した人</div>
+      </div>
+    </div>
+
+    <!-- 今週ログした場所 -->
+    <div class="section-label">今週ログした場所</div>
+    <div id="report-places" style="margin-bottom:24px"></div>
+
+    <!-- 感性が近かった人 -->
+    <div class="section-label">感性が近かった人</div>
+    <div id="report-near-people" style="margin-bottom:24px"></div>
+
+    <!-- おすすめ旅先 -->
+    <div class="section-label">あなたへのおすすめ旅先</div>
+    <div id="report-recommend" style="margin-bottom:24px"></div>
+
+    <!-- 一言メッセージ -->
+    <div style="background:var(--grad-waku);border-radius:12px;padding:24px 28px;text-align:center;margin-bottom:32px">
+      <div style="font-size:13px;line-height:2.1;color:var(--text)" id="report-message-text"></div>
+    </div>
+
+  </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('screen-home')"><span class="nav-icon">⌂</span>ホーム</div>
+    <div class="nav-item" onclick="goTo('screen-place-log')"><span class="nav-icon">◎</span>ログ</div>
+    <div class="nav-item" onclick="openSearch()"><span class="nav-icon">⊙</span>探す</div>
+    <div class="nav-item" onclick="openRecommend()"><span class="nav-icon">✦</span>共鳴</div>
+    <div class="nav-item" onclick="openMap()"><span class="nav-icon">○</span>軌跡</div>
+  </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ---- SUPABASE ----
+  const SUPABASE_URL = 'https://vovsapnzouspmnclssbz.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvdnNhcG56b3VzcG1uY2xzc2J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NTU5NDQsImV4cCI6MjA4ODQzMTk0NH0.ZnyXJJJ6ECeLr6fnGiy7-sT77o3-Cyx5vzi0rwUIDGA';
+  const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  async function saveLog(logData) {
+    const { error } = await sbClient.from('logs').insert([logData]);
+    if (error) console.error('保存エラー:', error.message, error.details, error.hint);
+  }
+
+  async function fetchAllLogs() {
+    const { data, error } = await sbClient.from('logs').select('*');
+    if (error) { console.error('取得エラー:', error); return []; }
+    const logs = data || [];
+    // プリセット座標で既存の誤座標を上書き補正
+    const placeList = PLACE_PRESETS;
+    logs.forEach(log => {
+      const preset = placeList.find(p => p.name === log.place);
+      if (preset) { log.lat = preset.lat; log.lng = preset.lng; log.region = preset.region; }
+    });
+    return logs;
+  }
+  // ---- NAVIGATION ----
+  let navHistory = ['screen-home'];
+  function goTo(id) {
+    const cur = document.querySelector('.screen.active');
+    if (cur) { cur.classList.add('exit'); setTimeout(() => cur.classList.remove('active','exit'), 340); }
+    const next = document.getElementById(id);
+    next.classList.add('active');
+    const body = next.querySelector('.screen-body');
+    if (body) body.scrollTop = 0;
+    navHistory.push(id);
+  }
+  function goBack() {
+    navHistory.pop();
+    const prev = navHistory[navHistory.length-1] || 'screen-home';
+    const cur = document.querySelector('.screen.active');
+    if (cur) { cur.classList.add('exit'); setTimeout(() => cur.classList.remove('active','exit'), 340); }
+    document.getElementById(prev).classList.add('active');
+  }
+
+  // ---- PLACES ----
+  const PLACE_PRESETS = [
+    // 関東
+    {name:'富士山', region:'静岡県・山梨県', readings:['ふじさん','ふじ','富士','静岡','山梨'], lat:35.3606, lng:138.7274},
+    {name:'東京スカイツリー', region:'東京都', readings:['スカイツリー','東京','浅草','押上'], lat:35.7101, lng:139.8107},
+    {name:'浅草寺', region:'東京都', readings:['せんそうじ','浅草','東京'], lat:35.7148, lng:139.7967},
+    {name:'江の島', region:'神奈川県', readings:['えのしま','神奈川','湘南','海'], lat:35.2997, lng:139.4803},
+    {name:'熱海', region:'静岡県', readings:['あたみ','熱海','静岡','海','温泉'], lat:35.1010, lng:139.0765},
+    {name:'鎌倉', region:'神奈川県', readings:['かまくら','神奈川','大仏','寺'], lat:35.3192, lng:139.5469},
+    {name:'日光東照宮', region:'栃木県', readings:['にっこう','日光','栃木','東照宮'], lat:36.7581, lng:139.5994},
+    {name:'草津温泉', region:'群馬県', readings:['くさつ','草津','群馬','温泉'], lat:36.6181, lng:138.5964},
+    // 関西
+    {name:'伏見稲荷大社', region:'京都府', readings:['ふしみいなり','伏見','稲荷','京都','鳥居'], lat:34.9671, lng:135.7727},
+    {name:'金閣寺', region:'京都府', readings:['きんかくじ','金閣','京都'], lat:35.0394, lng:135.7292},
+    {name:'嵐山', region:'京都府', readings:['あらしやま','嵐山','京都','竹林'], lat:35.0094, lng:135.6783},
+    {name:'清水寺', region:'京都府', readings:['きよみずでら','清水','京都'], lat:34.9948, lng:135.7850},
+    {name:'奈良公園', region:'奈良県', readings:['なら','奈良','鹿','東大寺'], lat:34.6851, lng:135.8432},
+    {name:'姫路城', region:'兵庫県', readings:['ひめじ','姫路','兵庫','城'], lat:34.8394, lng:134.6939},
+    {name:'USJ', region:'大阪府', readings:['ゆーえすじぇい','ユニバ','大阪','テーマパーク'], lat:34.6654, lng:135.4323},
+    {name:'道頓堀', region:'大阪府', readings:['どうとんぼり','道頓堀','大阪','グリコ'], lat:34.6687, lng:135.5014},
+    // 中部・北陸
+    {name:'白川郷', region:'岐阜県', readings:['しらかわごう','白川郷','岐阜','世界遺産','合掌'], lat:36.2577, lng:136.9016},
+    {name:'上高地', region:'長野県', readings:['かみこうち','上高地','長野','アルプス','自然'], lat:36.2381, lng:137.6200},
+    {name:'兼六園', region:'石川県', readings:['けんろくえん','兼六園','金沢','石川'], lat:36.5617, lng:136.6625},
+    // 中国・四国
+    {name:'厳島神社', region:'広島県', readings:['いつくしま','宮島','広島','鳥居','海'], lat:34.2957, lng:132.3195},
+    {name:'鳥取砂丘', region:'鳥取県', readings:['とっとり','砂丘','鳥取'], lat:35.5395, lng:134.2288},
+    // 九州・沖縄
+    {name:'由布院温泉', region:'大分県', readings:['ゆふいん','由布院','湯布院','大分','温泉'], lat:33.2608, lng:131.3903},
+    {name:'別府温泉', region:'大分県', readings:['べっぷ','別府','大分','温泉','地獄'], lat:33.2846, lng:131.4914},
+    {name:'桜島', region:'鹿児島県', readings:['さくらじま','桜島','鹿児島','火山'], lat:31.5819, lng:130.6567},
+    {name:'妙見温泉', region:'鹿児島県', readings:['みょうけん','妙見','鹿児島','温泉'], lat:31.8500, lng:130.6833},
+    {name:'霧島温泉', region:'鹿児島県', readings:['きりしま','霧島','鹿児島','温泉'], lat:31.8953, lng:130.8614},
+    {name:'屋久島', region:'鹿児島県', readings:['やくしま','屋久島','鹿児島','縄文杉','世界遺産'], lat:30.3467, lng:130.5467},
+    {name:'首里城', region:'沖縄県', readings:['しゅりじょう','首里城','沖縄','那覇'], lat:26.2172, lng:127.7197},
+    {name:'美ら海水族館', region:'沖縄県', readings:['ちゅらうみ','美ら海','沖縄','水族館'], lat:26.6942, lng:127.8786},
+    // 東北
+    {name:'松島', region:'宮城県', readings:['まつしま','松島','宮城','日本三景'], lat:38.3744, lng:141.0694},
+    {name:'角館', region:'秋田県', readings:['かくのだて','角館','秋田','武家屋敷','桜'], lat:39.5969, lng:140.5636},
+    // 北海道
+    {name:'函館山展望台', region:'北海道', readings:['はこだて','函館','北海道','夜景'], lat:41.7580, lng:140.9975},
+    {name:'小樽', region:'北海道', readings:['おたる','小樽','北海道','運河'], lat:43.1907, lng:140.9947},
+    {name:'富良野', region:'北海道', readings:['ふらの','富良野','北海道','ラベンダー'], lat:43.3417, lng:142.3831},
+    {name:'知床', region:'北海道', readings:['しれとこ','知床','北海道','世界遺産','自然'], lat:44.0789, lng:145.1244},
+  ];
+
+  let selectedPlaceLat = null, selectedPlaceLng = null;
+  let selectedPlaceName = '', selectedPlaceRegion = '';
+  let axisValues = {koyo:null,solo:null,atatakasa:null};
+  let totalLogs = 0, totalResonance = 0;
+  let myLogs = [];
+
+  function onPlaceInput(val) {
+    const box = document.getElementById('suggestions');
+    if (!val.trim()) { box.classList.remove('visible'); return; }
+    const q = val.toLowerCase();
+    const f = PLACE_PRESETS.filter(p =>
+      p.name.includes(val) ||
+      p.region.includes(val) ||
+      p.readings.some(r => r.includes(q))
+    );
+    const items = f.map(p =>
+      `<div class="suggestion-item" onclick="selectPlace('${p.name}','${p.region}',${p.lat},${p.lng})">
+        <span style="font-size:12px;color:var(--text-muted)">◎</span>
+        <span class="s-name">${p.name}</span>
+        <span class="s-region">${p.region}</span>
+      </div>`
+    );
+    // 自由入力オプション（候補にない場合）
+    const exactMatch = f.some(p => p.name === val);
+    if (!exactMatch) {
+      items.push(`<div class="suggestion-item" onclick="selectFreeInput('${val.replace(/'/g,"\\'")}')">
+        <span style="font-size:12px;color:var(--accent)">＋</span>
+        <span class="s-name" style="color:var(--accent)">「${val}」をそのまま入力</span>
+      </div>`);
+    }
+    if (!items.length) { box.classList.remove('visible'); return; }
+    box.innerHTML = items.join('');
+    box.classList.add('visible');
+  }
+
+  async function selectFreeInput(name) {
+    // Nominatim APIで座標を取得
+    document.getElementById('suggestions').classList.remove('visible');
+    document.getElementById('placeName').textContent = name;
+    document.getElementById('placeRegion').textContent = '取得中...';
+    document.getElementById('searchArea').style.display = 'none';
+    document.getElementById('selectedPlace').classList.add('visible');
+    selectedPlaceName = name;
+    selectedPlaceRegion = '';
+    selectedPlaceLat = null;
+    selectedPlaceLng = null;
+    updateSubmitState();
+
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=3&accept-language=ja&countrycodes=jp&viewbox=122.9,24.0,153.9,45.5&bounded=1`);
+      const data = await res.json();
+      if (data.length) {
+        selectedPlaceLat = parseFloat(data[0].lat);
+        selectedPlaceLng = parseFloat(data[0].lon);
+        const displayName = data[0].display_name.split(',')[0];
+        selectedPlaceRegion = data[0].display_name.split(',').slice(1,3).join('').trim();
+        document.getElementById('placeRegion').textContent = selectedPlaceRegion || '場所を取得しました';
+      } else {
+        document.getElementById('placeRegion').textContent = '座標取得できませんでした';
+      }
+    } catch(e) {
+      document.getElementById('placeRegion').textContent = '';
+    }
+  }
+  function selectPlace(name, region, lat, lng) {
+    selectedPlaceName = name; selectedPlaceRegion = region;
+    selectedPlaceLat = lat; selectedPlaceLng = lng;
+    document.getElementById('searchArea').style.display='none';
+    document.getElementById('placeName').textContent=name;
+    document.getElementById('placeRegion').textContent=region;
+    document.getElementById('selectedPlace').classList.add('visible');
+    updateSubmitState();
+  }
+  function changPlace() {
+    selectedPlaceName='';
+    document.getElementById('searchArea').style.display='block';
+    document.getElementById('selectedPlace').classList.remove('visible');
+    document.getElementById('placeInput').value='';
+    document.getElementById('suggestions').classList.remove('visible');
+    updateSubmitState();
+  }
+
+  // ---- SLIDERS ----
+  function startDrag(e,axis) {
+    e.preventDefault();
+    const track = document.getElementById('track-'+axis);
+    track.classList.add('dragging');
+    updateAxisValue(e,axis);
+    const move = ev => updateAxisValue(ev,axis);
+    const up = () => { track.classList.remove('dragging'); document.removeEventListener('mousemove',move); document.removeEventListener('touchmove',move); document.removeEventListener('mouseup',up); document.removeEventListener('touchend',up); };
+    document.addEventListener('mousemove',move);
+    document.addEventListener('touchmove',move,{passive:false});
+    document.addEventListener('mouseup',up);
+    document.addEventListener('touchend',up);
+  }
+  function updateAxisValue(e,axis) {
+    const track = document.getElementById('track-'+axis);
+    const rect = track.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const pct = Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
+    const val = Math.round(pct*10);
+    axisValues[axis]=val;
+    document.getElementById('fill-'+axis).style.width=(pct*100)+'%';
+    document.getElementById('thumb-'+axis).style.left=(pct*100)+'%';
+    const ve = document.getElementById('val-'+axis);
+    ve.textContent=val; ve.classList.remove('zero');
+    updateScoreDots(); updateSubmitState();
+  }
+  function updateScoreDots() {
+    const axes=['koyo','solo','atatakasa'];
+    document.getElementById('scoreDots').innerHTML=axes.map(a=>`<div class="score-dot ${axisValues[a]!==null?'filled':''}"></div>`).join('');
+  }
+  function updateSubmitState() {
+    const btn=document.getElementById('submitBtn'), label=document.getElementById('submitLabel');
+    const allAxes=Object.values(axisValues).every(v=>v!==null);
+    const hasName=document.getElementById('nameInput').value.trim().length>0;
+    if (!hasName) { label.textContent='名前を入力してください'; btn.classList.add('disabled'); }
+    else if (!selectedPlaceName) { label.textContent='場所を選んでください'; btn.classList.add('disabled'); }
+    else if (!allAxes) { const rem=Object.values(axisValues).filter(v=>v===null).length; label.textContent=`評価を入力（残り${rem}項目）`; btn.classList.add('disabled'); }
+    else { label.textContent='ログを送る →'; btn.classList.remove('disabled'); }
+  }
+  function toggleTag(el) { el.classList.toggle('active'); }
+  function updateCharCount() { document.getElementById('charCount').textContent=document.getElementById('logText').value.length; }
+
+  // ---- CLUSTER LOGIC ----
+  function detectCluster(v) {
+    const typeName = getPersona(v);
+    const t = PERSONA_TYPES[typeName] || PERSONA_TYPES['感性バランス型'];
+    return { name: typeName, icon: t.icon, sub: t.desc, color: t.color, pct: 65 };
+  }
+
+  let currentTypeName = null;
+
+  // ペルソナ一覧画面を開く
+  function openPersonaList() {
+    goTo('screen-persona-list');
+    renderPersonaList();
+  }
+
+  function renderPersonaList() {
+    const diagType = localStorage.getItem('kansei_diagnosis_type');
+    const logType = myLogs.length >= 3 ? getPersona(avgAxes(myLogs)) : null;
+    // 表示に使うメインタイプ（ログが優先）
+    const myType = logType || diagType || currentTypeName;
+
+    // あなたのタイプセクション
+    const mySection = document.getElementById('persona-my-type-section');
+    if (myType && PERSONA_TYPES[myType]) {
+      mySection.style.display = 'block';
+      // 診断タイプとログタイプが違う場合は両方表示
+      let cardHTML = '';
+      if (diagType && logType && diagType !== logType) {
+        cardHTML = `
+          <div style="margin-bottom:10px">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;color:var(--text-muted);margin-bottom:6px">最初の診断</div>
+            <div style="opacity:0.65;cursor:pointer" onclick="event.stopPropagation();showTypeDetail('${diagType}')">${buildPersonaCard(diagType, false)}</div>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--accent);margin:8px 0 6px;text-align:center">↓ ログで変化</div>
+          <div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;color:var(--text-muted);margin-bottom:6px">現在のタイプ</div>
+            <div style="cursor:pointer" onclick="event.stopPropagation();showTypeDetail('${logType}')">${buildPersonaCard(logType, true)}</div>
+          </div>`;
+      } else {
+        cardHTML = `<div style="cursor:pointer" onclick="showTypeDetail('${myType}')">${buildPersonaCard(myType, true)}</div>`;
+      }
+      document.getElementById('persona-my-type-card').innerHTML = cardHTML;
+      updateMatrixMyMarker(myType);
+    } else {
+      mySection.style.display = 'none';
+    }
+
+    // 全タイプカード
+    const order = ['ひとり探検家','風まかせの旅人','感動を届ける人','余白旅人','ただいま旅人','時をめぐる人','深みへ還る人','まだ旅の途中'];
+    document.getElementById('persona-all-cards').innerHTML = order.map(name => {
+      const isMe = name === myType;
+      return `<div onclick="showTypeDetail('${name}')">${buildPersonaCard(name, isMe)}</div>`;
+    }).join('');
+
+    // マトリクスのis-mineクラス
+    document.querySelectorAll('.matrix-dot').forEach(d => {
+      d.classList.toggle('is-mine', d.dataset.type === myType);
+    });
+  }
+
+  function buildPersonaCard(typeName, isMe) {
+    const t = PERSONA_TYPES[typeName];
+    if (!t) return '';
+    return `
+      <div class="persona-card ${isMe ? 'is-mine' : ''}" style="background:${t.grad};${isMe ? `border-color:${t.color};` : ''}">
+        <div class="persona-card-icon">${t.icon}</div>
+        <div class="persona-card-body">
+          ${isMe ? `<div class="persona-mine-badge">◎ あなたのタイプ</div>` : ''}
+          <div class="persona-card-name" style="color:${t.color}">${typeName}</div>
+          <div class="persona-card-keyword" style="color:${t.color};opacity:0.7">${t.keyword}</div>
+          <div class="persona-card-desc">${t.desc}</div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:13px;color:var(--text-muted);flex-shrink:0;margin-top:2px">▸</div>
+      </div>`;
+  }
+
+  // マトリクス上のタイプ座標（左%,上%）
+  const MATRIX_POSITIONS = {
+    '発見者':         { l: 22, t: 18 },
+    '祝祭人':         { l: 68, t: 18 },
+    'エクスプローラー': { l: 68, t: 38 },
+    '共鳴者':         { l: 68, t: 62 },
+    '聖地巡礼者':     { l: 68, t: 78 },
+    '余白旅人':       { l: 22, t: 62 },
+    '静寂の求道者':   { l: 22, t: 78 },
+    '感性バランス型': { l: 45, t: 48 },
+    // 新タイプ
+    'ひとり探検家':   { l: 18, t: 14 },
+    '風まかせの旅人': { l: 52, t: 24 },
+    '感動を届ける人': { l: 78, t: 14 },
+    'ただいま旅人':   { l: 78, t: 72 },
+    '時をめぐる人':   { l: 58, t: 62 },
+    '余白旅人':       { l: 28, t: 56 },
+    '深みへ還る人':   { l: 18, t: 78 },
+    'まだ旅の途中':   { l: 45, t: 46 },
+  };
+
+  function updateMatrixMyMarker(typeName) {
+    const marker = document.getElementById('matrix-my-marker');
+    if (!marker) return;
+    const pos = MATRIX_POSITIONS[typeName];
+    if (pos) {
+      marker.style.display = 'block';
+      marker.style.left = pos.l + '%';
+      marker.style.top = pos.t + '%';
+    } else {
+      marker.style.display = 'none';
+    }
+  }
+
+  function showTypeDetail(typeName) {
+    showTypeModal(typeName);
+  }
+
+  function showMyTypeDetail() {
+    if (currentTypeName) showTypeModal(currentTypeName);
+  }
+
+  function onTapType() {
+    openPersonaList();
+  }
+
+
+  // ---- RARITY ----
+  function getRarity(placeName) {
+    const rarePlaces = ['白神山地','天橋立','鳥取砂丘'];
+    const isRare = rarePlaces.includes(placeName);
+    if (isRare) return {
+      type:'rare', icon:'◈',
+      title:`このスポット、あなたを含め${Math.floor(Math.random()*3)+2}人だけが高評価`,
+      desc:'まだ多くの人に知られていない感性の場所かもしれません。あなたのログが、次の誰かへの道しるべになります。'
+    };
+    return {
+      type:'shared', icon:'◇',
+      title:`同じ感性で評価した人が${Math.floor(Math.random()*8)+5}人います`,
+      desc:'感性の近い人たちが、同じように価値を感じた場所です。'
+    };
+  }
+
+  // ---- SUBMIT ----
+  async function submitLog() {
+    if (document.getElementById('submitBtn').classList.contains('disabled')) return;
+    
+    const userName = document.getElementById('nameInput').value.trim();
+    const memo = document.getElementById('logText').value.trim();
+    
+    totalLogs++;
+    const cluster = detectCluster(axisValues);
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+
+    // Save to myLogs for map
+    myLogs.push({
+      place: selectedPlaceName,
+      region: selectedPlaceRegion,
+      lat: selectedPlaceLat,
+      lng: selectedPlaceLng,
+      axes: {
+        koyo: axisValues.koyo,
+        solo: axisValues.solo,
+        atatakasa: axisValues.atatakasa,
+        // 旧軸互換（近似変換）
+        waku: axisValues.koyo,
+        shizu: 10 - axisValues.koyo,
+        tsunagari: axisValues.atatakasa,
+        share: axisValues.solo
+      },
+      time: timeStr,
+      date: dateStr,
+      name: userName
+    });
+
+    // localStorageに保存
+    localStorage.setItem('kansei_name', userName);
+    localStorage.setItem('kansei_logs', JSON.stringify(myLogs));
+
+    // 3件診断
+    checkInstantDiagnosis();
+
+    // Save to Supabase
+    await saveLog({
+      name: userName,
+      place: selectedPlaceName,
+      region: selectedPlaceRegion || '',
+      lat: selectedPlaceLat ? parseFloat(selectedPlaceLat) : null,
+      lng: selectedPlaceLng ? parseFloat(selectedPlaceLng) : null,
+      // 新3軸
+      koyo: parseInt(axisValues.koyo),
+      solo: parseInt(axisValues.solo),
+      atatakasa: parseInt(axisValues.atatakasa),
+      // 旧4軸（互換用近似変換）
+      waku: parseInt(axisValues.koyo),
+      shizu: 10 - parseInt(axisValues.koyo),
+      tsunagari: parseInt(axisValues.atatakasa),
+      share: parseInt(axisValues.solo),
+      memo: memo || null,
+      log_date: dateStr
+    });
+    document.getElementById('r-place').textContent = selectedPlaceName + '　' + selectedPlaceRegion;
+    document.getElementById('r-time').textContent = dateStr + '  ' + timeStr + ' にログ';
+    document.getElementById('r-cluster-name').textContent = cluster.name;
+    document.getElementById('r-cluster-sub').textContent = PERSONA_TYPES[cluster.name]?.desc || cluster.sub;
+
+
+    const rarityEl = document.getElementById('r-rarity');
+    rarityEl.className = 'rarity-card fade-in shared';
+    rarityEl.innerHTML = `<div class="rarity-icon">◎</div><div><div class="rarity-title">感性データをログしました</div><div class="rarity-desc">共鳴画面で他のユーザーとの感性の近さを見てみましょう。</div></div>`;
+
+    const insightMap = {
+      'ひとり探検家': 'ひとりで感性を研ぎ澄ませる旅人です。ログを重ねると、あなたが何に心を動かされるかのパターンが見えてきます。',
+      '風まかせの旅人': '出会いが旅を広げる旅人です。新しい場所と人との化学反応が、あなたの感性を育てています。',
+      '感動を届ける人': '伝えることで旅が完成する旅人です。あなたの表現が、誰かの旅のきっかけになっていきます。',
+      '余白旅人': '静かな時間に旅の深さを感じる旅人です。余白の中にこそ、感性の本質が宿っています。',
+      'ただいま旅人': '土地の温かさに深く溶け込む旅人です。どこかで「帰ってきた」と感じる場所を探しています。',
+      '時をめぐる人': '場所の記憶と対話する旅人です。土地に積み重なった時間を感じ取る感性を持っています。',
+      '深みへ還る人': '静寂の中で自分と向き合う旅人です。感動を内側に刻む、深い感性の持ち主です。',
+      'まだ旅の途中': 'どの方向にも開かれています。ログを重ねるたびに、あなただけの感性の色が見えてきます。',
+    };
+    document.getElementById('r-insight').innerHTML = insightMap[cluster.name] || '';
+
+    // Hide resonance section until real data
+    document.getElementById('r-resonance').style.display = 'none';
+    document.getElementById('r-souls').style.display = 'none';
+
+    goTo('screen-result');
+
+    setTimeout(() => {
+      ['r-hero','r-rarity','r-cluster','r-insight','r-actions'].forEach((id,i) => {
+        setTimeout(() => document.getElementById(id).classList.add('visible'), i*120);
+      });
+      document.getElementById('stat-logs').textContent = totalLogs;
+      currentTypeName = cluster.name;
+      const clusterEl = document.getElementById('stat-cluster');
+      clusterEl.textContent = cluster.name;
+      clusterEl.style.color = cluster.color || 'var(--accent)';
+    }, 380);
+  }
+
+  function resetAndLog() {
+    selectedPlaceName=''; axisValues={koyo:null,solo:null,atatakasa:null};
+    ['koyo','solo','atatakasa'].forEach(a=>{
+      document.getElementById('fill-'+a).style.width='0%';
+      document.getElementById('thumb-'+a).style.left='0%';
+      const v=document.getElementById('val-'+a); v.textContent='—'; v.classList.add('zero');
+    });
+    document.getElementById('logText').value='';
+    document.getElementById('charCount').textContent='0';
+    document.querySelectorAll('.tag').forEach(t=>t.classList.remove('active'));
+    changPlace(); updateScoreDots();
+    ['r-hero','r-resonance','r-rarity','r-cluster','r-souls','r-insight','r-actions'].forEach(id=>document.getElementById(id).classList.remove('visible'));
+    goTo('screen-place-log');
+  }
+
+  // ---- RECOMMEND DATA ----
+
+  // コサイン類似度で感性の近さを計算（新3軸 or 旧4軸互換）
+  function cosineSim(a, b) {
+    const hasNew = a.koyo !== undefined && b.koyo !== undefined;
+    const keys = hasNew ? ['koyo','solo','atatakasa'] : ['waku','shizu','tsunagari','share'];
+    const dot = keys.reduce((s,k) => s + (a[k]||0)*(b[k]||0), 0);
+    const magA = Math.sqrt(keys.reduce((s,k) => s + (a[k]||0)*(a[k]||0), 0));
+    const magB = Math.sqrt(keys.reduce((s,k) => s + (b[k]||0)*(b[k]||0), 0));
+    if (!magA || !magB) return 0;
+    return dot / (magA * magB);
+  }
+
+  // ユーザーの全ログの平均ベクトルを計算
+  function avgAxes(logs) {
+    const keys = ['koyo','solo','atatakasa','waku','shizu','tsunagari','share'];
+    const avg = {koyo:0,solo:0,atatakasa:0,waku:0,shizu:0,tsunagari:0,share:0};
+    if (!logs || !logs.length) return avg;
+    logs.forEach(l => {
+      const src = l.axes || l;
+      keys.forEach(k => avg[k] += (parseFloat(src[k]) || 0));
+    });
+    keys.forEach(k => avg[k] /= logs.length);
+    return avg;
+  }
+
+  // ログ送信後に呼ぶ：近い人・遠い人を計算してrecDataを更新
+  function buildRecDataFromUsers(myAxes, users) {
+    const scored = users.map(u => ({
+      ...u,
+      avgVec: avgAxes(u.logs),
+      sim: cosineSim(myAxes, avgAxes(u.logs))
+    })).sort((a,b) => b.sim - a.sim);
+
+    const placeMap = {};
+    scored.forEach(u => {
+      const isNear = u.sim > 0.82;
+      const isFar = u.sim < 0.55;
+      u.logs.forEach(l => {
+        if (!placeMap[l.place]) placeMap[l.place] = {
+          name: l.place, region: l.region,
+          axes: l.axes, voices: [], tags: [], nearCount: 0, farCount: 0
+        };
+        if (l.memo || isNear || isFar) {
+          placeMap[l.place].voices.push({
+            type: isNear ? 'near' : isFar ? 'far' : 'mid',
+            persona: getPersona(u.avgVec),
+            name: u.name,
+            sim: Math.round(u.sim * 100),
+            memo: l.memo,
+            // 補完ポイント：同じ場所でも感性が遠い＝異なる魅力がある
+            complement: isFar && l.memo ? `${getPersona(u.avgVec)}視点の魅力` : null
+          });
+        }
+        if (isNear) placeMap[l.place].nearCount++;
+        if (isFar) placeMap[l.place].farCount++;
+      });
+    });
+
+    Object.values(placeMap).forEach(p => {
+      const a = p.axes;
+      if (a.koyo >= 7 || a.waku >= 7) p.tags.push('koyo');
+      if ((10 - (a.koyo||0)) >= 7 || a.shizu >= 7) p.tags.push('shizu');
+      if (a.atatakasa >= 7 || a.tsunagari >= 7) p.tags.push('atatakasa');
+      if ((a.solo !== undefined ? a.solo <= 3 : a.share <= 3)) p.tags.push('solo');
+      p.rarity = p.nearCount <= 1
+        ? {type:'rare', label:`${p.nearCount+1}人だけが近い感性`}
+        : {type:'shared', label:`${p.nearCount}人が近い感性`};
+      // 補完フラグ：near声とfar声が両方ある場所
+      p.hasComplement = p.nearCount > 0 && p.farCount > 0;
+      // 近い人の声3件 + 遠い人の声2件まで
+      const nearVoices = p.voices.filter(v=>v.type==='near').slice(0,2);
+      const farVoices = p.voices.filter(v=>v.type==='far').slice(0,2);
+      p.voices = [...nearVoices, ...farVoices];
+    });
+
+    return Object.values(placeMap).sort((a,b) => b.nearCount - a.nearCount);
+  }
+
+  function buildRecDataFromLogs(allLogs) {
+    // ログイン前でも場所一覧として表示
+    const placeMap = {};
+    allLogs.forEach(log => {
+      if (!placeMap[log.place]) placeMap[log.place] = {
+        name: log.place, region: log.region,
+        axes: { waku: log.waku, shizu: log.shizu, tsunagari: log.tsunagari, share: log.share },
+        voices: [], tags: [],
+        rarity: { type: 'shared', label: `${0}人がログ` }
+      };
+      placeMap[log.place].voices.push({
+        persona: getPersona({ waku: log.waku, shizu: log.shizu, tsunagari: log.tsunagari }),
+        name: log.name, memo: log.memo,
+        _axes: { waku: log.waku, shizu: log.shizu, tsunagari: log.tsunagari, share: log.share }
+      });
+      placeMap[log.place].rarity.label = `${placeMap[log.place].voices.length}人がログ`;
+    });
+    // 場所の平均ベクトルと各voiceを比較してnear/farを振り分ける
+    Object.values(placeMap).forEach(p => {
+      if (p.voices.length === 0) return;
+      // 平均ベクトル
+      const avg = { koyo:0, solo:0, atatakasa:0, waku:0, shizu:0, tsunagari:0, share:0 };
+      p.voices.forEach(v => { Object.keys(avg).forEach(k => avg[k] += v._axes[k]); });
+      Object.keys(avg).forEach(k => avg[k] /= p.voices.length);
+      // 各voiceに類似度をつける
+      p.voices.forEach(v => { v.sim = Math.round(cosineSim(avg, v._axes) * 100); });
+      p.voices.sort((a,b) => b.sim - a.sim);
+      // 上位をnear、下位をfarに
+      const n = p.voices.length;
+      p.voices.forEach((v, i) => {
+        v.type = i < Math.ceil(n / 2) ? 'near' : 'far';
+      });
+      const nearVoices = p.voices.filter(v=>v.type==='near').slice(0,2);
+      const farVoices  = p.voices.filter(v=>v.type==='far').slice(0,2);
+      p.voices = [...nearVoices, ...farVoices];
+      p.hasComplement = nearVoices.length > 0 && farVoices.length > 0;
+    });
+    return Object.values(placeMap);
+  }
+
+  const PERSONA_TYPES = {
+    'ひとり探検家': {
+      icon: '✦',
+      color: '#b8935a',
+      grad: 'var(--grad-waku)',
+      tagline: '驚きが、旅のはじまり',
+      desc: 'まだ誰も見ていない景色を探している。発見の瞬間に生きている旅人。ひとりだからこそ、感性が研ぎ澄まされる。',
+      keyword: '発見・驚き・没入',
+      share_text: '私は #ひとり探検家 です。\n驚きが、旅のはじまり。\nKANSEIが見つけた、私の旅の本質。'
+    },
+    '風まかせの旅人': {
+      icon: '⊕',
+      color: '#5a9a7a',
+      grad: 'linear-gradient(135deg,#d0f0e0,#c0e8d0)',
+      tagline: '旅は、出会いで広がる',
+      desc: '新しい場所で新しい人と自然に打ち解ける。旅が行くたびに大きくなる。風のように軽やかに、でも深く。',
+      keyword: '出会い・行動力・拡張',
+      share_text: '私は #風まかせの旅人 です。\n旅は、出会いで広がる。\nKANSEIが教えてくれた私の旅のスタイル。'
+    },
+    '感動を届ける人': {
+      icon: '⊙',
+      color: '#8a72b0',
+      grad: 'var(--grad-share)',
+      tagline: '伝えることで、旅が完成する',
+      desc: '感動を言葉や写真に変えてはじめて体験が完成する。伝えることそのものが旅の喜び。',
+      keyword: '表現・伝達・シェア',
+      share_text: '私は #感動を届ける人 です。\n伝えることで、旅が完成する。\nKANSEIで知った、私の旅の形。'
+    },
+    '余白旅人': {
+      icon: '◇',
+      color: '#5a8aaa',
+      grad: 'var(--grad-shizu)',
+      tagline: '何もしない時間が、宝物',
+      desc: '喧騒から離れた静かな時間に旅の深さを感じる。予定を入れない勇気が、感性を育てる。',
+      keyword: '余白・静けさ・回復',
+      share_text: '私は #余白旅人 です。\n何もしない時間が、宝物。\nKANSEIが見つけた私の旅の核心。'
+    },
+    'ただいま旅人': {
+      icon: '◎',
+      color: '#c4626e',
+      grad: 'var(--grad-tsunagari)',
+      tagline: 'ただいま、と言いたくなる場所がある',
+      desc: '人の温かさ、土地の空気に深く溶け込む。旅先で「帰ってきた」と感じる瞬間を知っている人。',
+      keyword: '温もり・帰属・溶け込む',
+      share_text: '私は #ただいま旅人 です。\nただいま、と言いたくなる場所がある。\nKANSEIが照らした、私の旅の記憶。'
+    },
+    '時をめぐる人': {
+      icon: '◈',
+      color: '#7a6a5a',
+      grad: 'linear-gradient(135deg,#ede0d0,#e0d0c0)',
+      tagline: '場所には、時間が宿っている',
+      desc: '土地に積み重なった歴史・記憶・物語を感じ取る。旅が対話になる。古い街並み、廃線跡、誰かの暮らした痕跡に心が動く。',
+      keyword: '記憶・歴史・物語',
+      share_text: '私は #時をめぐる人 です。\n場所には、時間が宿っている。\nKANSEIが語った、私の旅の深さ。'
+    },
+    '深みへ還る人': {
+      icon: '◌',
+      color: '#7a7a9a',
+      grad: 'linear-gradient(135deg,#e8e8f8,#dcdcf0)',
+      tagline: 'ひとりでいることが、豊かさ',
+      desc: '深い静けさの中で自分と向き合う。感動を外に出さず、内側に刻む旅人。孤独は弱さではなく、感性の深さ。',
+      keyword: '孤独・内省・深淵',
+      share_text: '私は #深みへ還る人 です。\nひとりでいることが、豊かさ。\nKANSEIが見つけた、私の旅の静けさ。'
+    },
+    'まだ旅の途中': {
+      icon: '◉',
+      color: '#9a8a7a',
+      grad: 'linear-gradient(135deg,#f0ece8,#e8e4e0)',
+      tagline: 'まだ、旅はつづく',
+      desc: 'どの方向にも開かれている。軸がないのではなく、旅の中で感性が育っている途中。ログを重ねるたびに、自分の色が見えてくる。',
+      keyword: '探索・成長・途中',
+      share_text: '私は #まだ旅の途中 です。\nまだ、旅はつづく。\nKANSEIとともに、感性を育てています。'
+    },
+  };
+
+  // 新3軸でタイプ判定
+  function getPersona(vec) {
+    // 新軸（koyo/solo/atatakasa）があれば優先
+    const hasNew = vec.koyo !== undefined && vec.koyo !== null;
+    let koyo, solo, atatakasa;
+
+    if (hasNew) {
+      koyo = vec.koyo || 0;        // 0=安らぎ, 10=高揚
+      solo = vec.solo || 0;        // 0=ひとり, 10=みんな
+      atatakasa = vec.atatakasa || 0;
+    } else {
+      // 旧4軸からの近似変換
+      const w = vec.waku||0, s = vec.shizu||0, t = vec.tsunagari||0, sh = vec.share||0;
+      koyo = w;
+      solo = sh;
+      atatakasa = t;
+    }
+
+    // 中央判定（どの軸も曖昧）
+    const koyoBias = Math.abs(koyo - 5);
+    const soloBias = Math.abs(solo - 5);
+    if (koyoBias < 2 && soloBias < 2) return 'まだ旅の途中';
+
+    const isKoyo = koyo >= 6;   // 高揚寄り
+    const isShizu = koyo <= 4;  // 安らぎ寄り
+    const isSolo = solo <= 4;   // ひとり寄り
+    const isMinna = solo >= 6;  // みんな寄り
+    const isWarm = atatakasa >= 6;
+
+    // 高揚 × ひとり
+    if (isKoyo && isSolo) return 'ひとり探検家';
+    // 高揚 × みんな
+    if (isKoyo && isMinna) return '感動を届ける人';
+    // 高揚 × やや（どちらでもない）
+    if (isKoyo) return '風まかせの旅人';
+
+    // 安らぎ × ひとり
+    if (isShizu && isSolo && !isWarm) return '深みへ還る人';
+    if (isShizu && isSolo) return '余白旅人';
+    // 安らぎ × みんな
+    if (isShizu && isMinna && isWarm) return 'ただいま旅人';
+    if (isShizu && isMinna) return '時をめぐる人';
+    // 安らぎ × やや
+    if (isShizu) return isWarm ? 'ただいま旅人' : '余白旅人';
+
+    return 'まだ旅の途中';
+  }
+
+  function showTypeModal(typeName) {
+    const t = PERSONA_TYPES[typeName];
+    if (!t) return;
+    let modal = document.getElementById('typeModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'typeModal';
+      modal.style.cssText = 'position:fixed;inset:0;z-index:999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.25);backdrop-filter:blur(4px);';
+      modal.onclick = (e) => { if(e.target===modal) modal.remove(); };
+      document.body.appendChild(modal);
+    }
+    modal.innerHTML = `
+      <div style="background:${t.grad};border-radius:20px 20px 0 0;padding:32px 28px 48px;width:100%;max-width:480px;box-shadow:0 -8px 40px rgba(0,0,0,0.12);animation:slideUp 0.3s ease">
+        <div style="width:40px;height:4px;background:rgba(0,0,0,0.12);border-radius:99px;margin:0 auto 28px;"></div>
+        <div style="font-size:36px;margin-bottom:12px;text-align:center">${t.icon}</div>
+        <div style="font-size:22px;text-align:center;margin-bottom:6px;color:${t.color};font-weight:500">${typeName}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;text-align:center;color:var(--text-muted);letter-spacing:0.15em;margin-bottom:20px">${t.keyword}</div>
+        <div style="font-size:14px;line-height:1.9;color:var(--text);text-align:center;padding:0 8px;margin-bottom:20px">${t.desc}</div>
+        ${t.share_text ? `
+        <div style="background:rgba(0,0,0,0.05);border-radius:10px;padding:14px 16px;margin-bottom:16px;position:relative">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:0.1em;margin-bottom:8px">SNSシェア文言</div>
+          <div id="shareTextContent" style="font-size:13px;line-height:1.9;color:var(--text);white-space:pre-line">${t.share_text}</div>
+          <button onclick="copyShareText('${typeName}')" style="margin-top:10px;width:100%;padding:10px;background:rgba(0,0,0,0.06);border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;cursor:pointer;color:var(--text-muted)">コピーする</button>
+        </div>` : ''}
+        <button onclick="document.getElementById('typeModal').remove()" style="width:100%;padding:14px;background:rgba(0,0,0,0.06);border:none;border-radius:8px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.15em;cursor:pointer;color:var(--text-muted)">とじる</button>
+      </div>`;
+  }
+
+  function copyShareText(typeName) {
+    const t = PERSONA_TYPES[typeName];
+    if (!t || !t.share_text) return;
+    navigator.clipboard.writeText(t.share_text).then(() => {
+      const btn = document.querySelector('#typeModal button:not(:last-child)');
+      // find copy button
+      const btns = document.querySelectorAll('#typeModal button');
+      btns.forEach(b => { if (b.textContent.includes('コピー')) { b.textContent = 'コピーしました ✓'; setTimeout(()=>b.textContent='コピーする',2000); }});
+    });
+  }
+
+
+  // ---- GPS PLACE ----
+  async function getGpsPlace() {
+    const btn = document.getElementById('gpsBtn');
+    const status = document.getElementById('gpsStatus');
+    if (!navigator.geolocation) { status.textContent = '位置情報が使えません'; status.style.display='block'; return; }
+    btn.textContent = '取得中...';
+    btn.style.color = 'var(--accent)';
+    status.textContent = '現在地を取得しています...';
+    status.style.display = 'block';
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      // 最寄りのプリセット場所を検索
+      let nearest = null, minDist = Infinity;
+      PLACE_PRESETS.forEach(p => {
+        if (!p.lat || !p.lng) return;
+        const d = Math.sqrt((p.lat-lat)**2 + (p.lng-lng)**2);
+        if (d < minDist) { minDist = d; nearest = p; }
+      });
+      // 50km以内ならプリセット提案
+      if (nearest && minDist < 0.5) {
+        status.textContent = `現在地の近く: ${nearest.name}`;
+        const box = document.getElementById('suggestions');
+        box.innerHTML = `<div class="suggestion-item" onclick="selectPlace('${nearest.name}','${nearest.region}',${nearest.lat},${nearest.lng});document.getElementById('gpsStatus').style.display='none'">
+          <span style="font-size:12px;color:var(--accent)">⊕</span>
+          <span class="s-name">${nearest.name}</span>
+          <span class="s-region">${nearest.region}</span>
+        </div>`;
+        box.classList.add('visible');
+      } else {
+        // Nominatimで逆ジオコーディング
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ja`);
+          const data = await res.json();
+          const name = data.address?.tourism || data.address?.amenity || data.address?.suburb || data.address?.city || '現在地';
+          const region = data.address?.prefecture || data.address?.state || '';
+          selectedPlaceLat = lat; selectedPlaceLng = lng;
+          selectedPlaceName = name; selectedPlaceRegion = region;
+          document.getElementById('searchArea').style.display = 'none';
+          document.getElementById('placeName').textContent = name;
+          document.getElementById('placeRegion').textContent = region;
+          document.getElementById('selectedPlace').classList.add('visible');
+          status.style.display = 'none';
+          updateSubmitState();
+        } catch(e) {
+          status.textContent = '取得できませんでした';
+        }
+      }
+      btn.textContent = '⊕ 現在地';
+      btn.style.color = '';
+    }, () => {
+      status.textContent = '位置情報の取得を許可してください';
+      btn.textContent = '⊕ 現在地';
+      btn.style.color = '';
+    }, { timeout: 10000 });
+  }
+
+  // ---- QUICK LOG MODE ----
+  let currentMode = 'quick';
+  function setLogMode(mode) {
+    currentMode = mode;
+    const quickCard = document.getElementById('quickLogCard');
+    const fullCard = document.getElementById('fullAxesCard');
+    const btnQuick = document.getElementById('modeQuick');
+    const btnFull = document.getElementById('modeFull');
+    if (mode === 'quick') {
+      quickCard.style.display = 'block';
+      fullCard.style.display = 'none';
+      btnQuick.style.background = 'var(--accent-glow)'; btnQuick.style.borderColor = 'var(--accent)'; btnQuick.style.color = 'var(--accent)';
+      btnFull.style.background = 'transparent'; btnFull.style.borderColor = 'var(--border)'; btnFull.style.color = 'var(--text-muted)';
+    } else {
+      quickCard.style.display = 'none';
+      fullCard.style.display = 'block';
+      btnFull.style.background = 'var(--accent-glow)'; btnFull.style.borderColor = 'var(--accent)'; btnFull.style.color = 'var(--accent)';
+      btnQuick.style.background = 'transparent'; btnQuick.style.borderColor = 'var(--border)'; btnQuick.style.color = 'var(--text-muted)';
+    }
+  }
+
+  function applyQuickMood(btn) {
+    // ハイライト
+    document.querySelectorAll('.quick-mood').forEach(b => b.style.outline = 'none');
+    btn.style.outline = '2px solid var(--accent)';
+    // 値セット
+    const koyo = parseInt(btn.dataset.koyo), solo = parseInt(btn.dataset.solo);
+    const atatakasa = parseInt(btn.dataset.atatakasa);
+    ['koyo','solo','atatakasa'].forEach(axis => {
+      const val = {koyo,solo,atatakasa}[axis];
+      axisValues[axis] = val;
+      const pct = val / 10;
+      document.getElementById('fill-'+axis).style.width=(pct*100)+'%';
+      document.getElementById('thumb-'+axis).style.left=(pct*100)+'%';
+      const ve = document.getElementById('val-'+axis); ve.textContent=val; ve.classList.remove('zero');
+    });
+    updateScoreDots(); updateSubmitState();
+  }
+
+  // ---- 3件診断バナー ----
+  function checkInstantDiagnosis() {
+    if (myLogs.length === 3 && !document.getElementById('diagnosisBanner')) {
+      const avgV = avgAxes(myLogs);
+      const type = getPersona(avgV);
+      const t = PERSONA_TYPES[type];
+      if (!t) return;
+      const banner = document.createElement('div');
+      banner.id = 'diagnosisBanner';
+      banner.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:500;background:${t.grad};border:1px solid rgba(0,0,0,0.1);border-radius:14px;padding:16px 20px;max-width:360px;width:calc(100% - 32px);box-shadow:0 8px 32px rgba(0,0,0,0.12);animation:slideUp 0.4s ease;cursor:pointer`;
+      banner.onclick = () => { openPersonaList(); banner.remove(); };
+      banner.innerHTML = `
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="font-size:28px">${t.icon}</div>
+          <div style="flex:1">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;color:var(--text-muted);margin-bottom:4px">3件ログ達成 · 感性タイプ判明</div>
+            <div style="font-size:16px;color:${t.color};font-weight:500">${type}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:0.1em;margin-top:2px">${t.keyword}</div>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted)">▸</div>
+        </div>`;
+      document.body.appendChild(banner);
+      setTimeout(() => { if (banner.parentNode) banner.remove(); }, 8000);
+    }
+  }
+
+  // ---- INIT QUICK MODE ----
+  setLogMode('quick');
+
+  const axisColors={koyo:'var(--accent)',solo:'var(--purple)',atatakasa:'var(--rose)',waku:'var(--accent)',shizu:'var(--blue)',tsunagari:'var(--rose)',share:'var(--purple)'};
+  const axisLabels={koyo:'高揚↔安らぎ',solo:'ひとり↔みんな',atatakasa:'あたたかさ',waku:'高揚',shizu:'安らぎ',tsunagari:'あたたかさ',share:'みんなと'};
+  let currentFilter='all';
+
+  function filterRec(el,filter) {
+    document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    currentFilter=filter;
+    renderRec();
+  }
+
+  function renderRec() {
+    const list = document.getElementById('recList');
+    const filtered = currentFilter==='all' ? recData : recData.filter(r=>r.tags.includes(currentFilter));
+    if (!filtered.length) {
+      list.innerHTML=`<div style="text-align:center;padding:50px 24px;color:var(--text-muted);font-size:14px;line-height:1.8">このフィルターに合う場所はまだありません。<br>ログを増やすと精度が上がります。</div>`;
+      return;
+    }
+    list.innerHTML = filtered.map((r,i)=>`
+      <div class="rec-card" style="animation-delay:${i*0.07}s">
+        <div class="rec-card-top">
+          <div class="rec-card-body">
+            <div class="rec-place-name">${r.name}</div>
+            <div class="rec-place-region">${r.region}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+              <div class="rec-rarity-badge ${r.rarity.type}">${r.rarity.type==='rare'?'◈':'◇'} ${r.rarity.label}</div>
+              ${r.hasComplement ? `<div class="rec-rarity-badge" style="background:rgba(106,158,122,0.08);border:1px solid rgba(106,158,122,0.2);color:var(--green)">⇄ 感性補完あり</div>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="rec-axes">
+          ${Object.entries(r.axes).filter(([k])=>['koyo','solo','atatakasa'].includes(k)).map(([k,v])=>`
+            <div class="rec-axis-row">
+              <div class="rec-axis-head"><span>${axisLabels[k]}</span><span>${v}</span></div>
+              <div class="rec-axis-track"><div class="rec-axis-fill" style="width:${v*10}%;background:${axisColors[k]}"></div></div>
+            </div>`).join('')}
+        </div>
+        ${r.voices.length ? `<div class="rec-voices">
+          ${r.hasComplement && r.voices.some(v=>v.type==='far') ? `<div style="padding:10px 22px 0;font-family:'DM Mono',monospace;font-size:9px;color:var(--green);letter-spacing:0.1em">⇄ 違う感性の人が見た魅力も表示しています</div>` : ''}
+          ${r.voices.map(v=>`
+            <div class="rec-voice ${v.type}">
+              <div class="rec-voice-dot"></div>
+              <div class="rec-voice-body">
+                <div class="rec-voice-meta">
+                  <span><strong>${v.name}</strong>（${v.persona}）</span>
+                  <span class="rec-voice-type">${v.type==='near'?'感性が近い':v.type==='far'?'感性が遠い':''}</span>
+                </div>
+                ${v.memo ? `<div class="rec-voice-text">${v.memo}</div>` : ''}
+                ${v.complement ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--green);margin-top:4px;letter-spacing:0.08em">${v.complement}</div>` : ''}
+              </div>
+            </div>`).join('')}
+        </div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  // ---- MAP ----
+  let leafletMap = null;
+
+  // ---- SEARCH ----
+  let allSearchLogs = [];
+  let searchRegionFilter = 'all';
+
+  async function openSearch() {
+    goTo('screen-search');
+    document.getElementById('searchPlaceInput').value = '';
+    document.getElementById('searchResults').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px">読み込み中...</div>';
+    allSearchLogs = await fetchAllLogs();
+    renderSearchResults();
+  }
+
+  function filterRegion(el, region) {
+    document.querySelectorAll('#screen-search .filter-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    searchRegionFilter = region;
+    renderSearchResults();
+  }
+
+  function filterSearchResults(query) {
+    renderSearchResults(query);
+  }
+
+  function renderSearchResults(query = '') {
+    const q = query.toLowerCase();
+    const placeMap = {};
+
+    allSearchLogs.forEach(log => {
+      // プリセットでregionを再補正（Supabase保存時の誤regionを上書き）
+      const preset = PLACE_PRESETS
+        .find(p => p.name === log.place);
+      if (preset) { log.region = preset.region; log.lat = preset.lat; log.lng = preset.lng; }
+
+      const matchQuery = !q || log.place.toLowerCase().includes(q) || (log.region||'').toLowerCase().includes(q);
+      const matchRegion = searchRegionFilter === 'all' || (log.region||'').includes(searchRegionFilter);
+      if (!matchQuery || !matchRegion) return;
+
+      if (!placeMap[log.place]) {
+        placeMap[log.place] = { name: log.place, region: log.region||'', logs: [] };
+      }
+      placeMap[log.place].logs.push(log);
+    });
+
+    const places = Object.values(placeMap);
+    const container = document.getElementById('searchResults');
+
+    if (!places.length) {
+      container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px">該当する場所がありません</div>';
+      return;
+    }
+
+    const axisColors = { waku:'#c8a97e', shizu:'#7ea8c8', tsunagari:'#d4818a', share:'#a891c8' };
+
+    container.innerHTML = places.map(p => {
+      const avg = avgAxesFromLogs(p.logs);
+      const dominant = Object.entries(avg).sort((a,b) => b[1]-a[1])[0];
+      const logCount = p.logs.length;
+      const hasMemo = p.logs.some(l => l.memo);
+
+      return `
+        <div class="rec-card" onclick="openPlaceDetail('${p.name.replace(/'/g,"\\'")}')">
+          <div class="rec-card-top">
+            <div style="width:36px;height:36px;border-radius:50%;background:${axisColors[dominant[0]]};opacity:0.15;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+              <div style="width:10px;height:10px;border-radius:50%;background:${axisColors[dominant[0]]};opacity:1"></div>
+            </div>
+            <div class="rec-card-body">
+              <div class="rec-place-name">${p.name}</div>
+              <div class="rec-place-region">${p.region}</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted)">${logCount}人がログ</span>
+                ${hasMemo ? '<span style="font-size:10px;color:var(--accent)">◎ 口コミあり</span>' : ''}
+              </div>
+            </div>
+            <div style="color:var(--text-muted);font-size:18px">→</div>
+          </div>
+          <div class="rec-axes">
+            ${Object.entries(avg).filter(([k]) => ['koyo','solo','atatakasa'].includes(k)).map(([k,v]) => `
+              <div class="rec-axis-row">
+                <div class="rec-axis-head"><span>${{koyo:'高揚↔安らぎ',solo:'ひとり↔みんな',atatakasa:'あたたかさ',waku:'高揚',shizu:'安らぎ',tsunagari:'あたたかさ',share:'みんなと'}[k]}</span><span>${v.toFixed(1)}</span></div>
+                <div class="rec-axis-track"><div class="rec-axis-fill" style="width:${v*10}%;background:${axisColors[k]}"></div></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function avgAxesFromLogs(logs) {
+    const keys = ['koyo','solo','atatakasa','waku','shizu','tsunagari','share'];
+    const avg = { koyo:0, solo:0, atatakasa:0, waku:0, shizu:0, tsunagari:0, share:0 };
+    logs.forEach(l => keys.forEach(k => avg[k] += (l[k]||0)));
+    keys.forEach(k => avg[k] /= logs.length);
+    return avg;
+  }
+
+  function openPlaceDetail(placeName) {
+    const logs = allSearchLogs.filter(l => l.place === placeName);
+    if (!logs.length) return;
+
+    document.getElementById('detail-place-name').textContent = placeName;
+
+    const avg = avgAxesFromLogs(logs);
+    const axisColors = { koyo:'#c8a97e', solo:'#8a72b0', atatakasa:'#d4818a' };
+    const axisLabels = { koyo:'高揚↔安らぎ', solo:'ひとり↔みんな', atatakasa:'あたたかさ' };
+
+    document.getElementById('detail-axes').innerHTML = Object.entries(avg).filter(([k]) => ['koyo','solo','atatakasa'].includes(k)).map(([k,v]) => `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:5px">
+          <span>${axisLabels[k]}</span><span>${v.toFixed(1)}</span>
+        </div>
+        <div style="height:3px;background:var(--border);border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:${v*10}%;background:${axisColors[k]};border-radius:99px;transition:width 0.6s ease"></div>
+        </div>
+      </div>
+    `).join('');
+
+    // 感性が近い順にソート（自分のログがあれば）
+    const myAxes = Object.values(axisValues).every(v=>v!==null) ? axisValues : null;
+    const sorted = logs.map(l => ({
+      ...l,
+      sim: myAxes ? cosineSim(myAxes, { waku:l.waku, shizu:l.shizu, tsunagari:l.tsunagari, share:l.share }) : 0
+    })).sort((a,b) => b.sim - a.sim);
+
+    document.getElementById('detail-voices').innerHTML = sorted.map(l => {
+      const isNear = myAxes && l.sim > 0.85;
+      const isFar = myAxes && l.sim <= 0.6;
+      const dotColor = isNear ? 'var(--accent)' : isFar ? 'var(--blue)' : 'var(--border)';
+      return `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:16px 18px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${l.memo?'10px':'0'}">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
+              <span style="font-size:14px;color:var(--text)">${l.name}</span>
+            </div>
+            ${myAxes ? `<span style="font-family:'DM Mono',monospace;font-size:10px;color:${isNear?'var(--accent)':'var(--text-muted)'}">${isNear?'感性が近い':'感性が遠い'}</span>` : ''}
+          </div>
+          ${l.memo ? `<div style="font-size:13px;color:var(--text-muted);line-height:1.75;padding-left:15px">"${l.memo}"</div>` : ''}
+        </div>`;
+    }).join('');
+
+    goTo('screen-place-detail');
+  }
+
+  function groupByUser(logs) {
+    const map = {};
+    logs.forEach(l => {
+      if (!map[l.name]) map[l.name] = { name: l.name, logs: [] };
+      map[l.name].logs.push({ ...l, axes: { waku:l.waku, shizu:l.shizu, tsunagari:l.tsunagari, share:l.share } });
+    });
+    return Object.values(map);
+  }
+
+  // ---- REPORT ----
+  async function openReport() {
+    goTo('screen-report');
+
+    // 週ラベル
+    const now = new Date();
+    const weekNum = Math.ceil(now.getDate() / 7);
+    document.getElementById('report-week-label').textContent =
+      `${now.getMonth()+1}月 第${weekNum}週 · KANSEI WEEKLY`;
+
+    // 自分のログ
+    const logs = myLogs;
+    const logCount = logs.length;
+    document.getElementById('report-log-count').textContent = logCount;
+
+    // 感性タイプ
+    const typeName = currentTypeName || (logCount > 0
+      ? getPersona(avgAxes(logs))
+      : null);
+    document.getElementById('report-type-name').textContent = typeName || '—';
+    if (typeName) {
+      document.getElementById('report-type-name').style.color = PERSONA_TYPES[typeName]?.color || 'var(--accent)';
+    }
+
+    // 感性スコア（平均）
+    const axisColorsR = { koyo:'#b8935a', solo:'#8a72b0', atatakasa:'#c4626e', waku:'#b8935a', shizu:'#5a8aaa', tsunagari:'#c4626e', share:'#8a72b0' };
+    const axisLabelsR = { koyo:'高揚↔安らぎ', solo:'ひとり↔みんな', atatakasa:'あたたかさ', waku:'高揚', shizu:'安らぎ', tsunagari:'あたたかさ', share:'みんなと' };
+
+    let avgVec = { koyo:5, solo:5, atatakasa:5, waku:5, shizu:5, tsunagari:5, share:5 };
+    if (logCount > 0) {
+      avgVec = avgAxes(myLogs);
+    }
+
+    // レーダーチャート描画
+    setTimeout(() => renderRadarChart(avgVec, null), 100);
+
+    document.getElementById('report-axes').innerHTML = Object.entries(avgVec).map(([k,v]) => `
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+          <span style="color:var(--text)">${axisLabelsR[k]}</span>
+          <span style="font-family:'DM Mono',monospace;color:${axisColorsR[k]}">${v.toFixed(1)}</span>
+        </div>
+        <div style="height:4px;background:rgba(0,0,0,0.08);border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:${v*10}%;background:${axisColorsR[k]};border-radius:99px;transition:width 0.8s ease"></div>
+        </div>
+      </div>`).join('');
+
+    // 傾向テキスト（新3軸を優先、旧4軸フォールバック）
+    const hasNewAxes = avgVec.koyo > 0 || avgVec.solo > 0 || avgVec.atatakasa > 0;
+    const dominantKey = hasNewAxes
+      ? (['koyo','solo','atatakasa'].reduce((a,b) => avgVec[a]>avgVec[b]?a:b))
+      : Object.entries({waku:avgVec.waku,shizu:avgVec.shizu,tsunagari:avgVec.tsunagari,share:avgVec.share}).sort((a,b)=>b[1]-a[1])[0][0];
+    const tendencyMap = {
+      koyo: '高揚感を求めた週でした。発見や驚きへの感度が高まっているようです。',
+      solo: 'みんなと体験をシェアしたい気持ちが強い週でした。旅の喜びを誰かと共有したいのかもしれません。',
+      atatakasa: '人や場所の温かさに深く心が開いた週でした。あたたかい繋がりを求めています。',
+      waku: 'ワクワクと高揚感を強く求めていた週でした。新しい体験への欲求が高まっているようです。',
+      shizu: '静けさと落ち着きを求めていた週でした。心を休めたい気持ちが旅に表れています。',
+      tsunagari: '人との繋がりや温かさを感じた週でした。誰かと共有する喜びが高まっています。',
+      share: '体験を発信・記録したい気持ちが強い週でした。表現欲が旅を豊かにしています。'
+    };
+    document.getElementById('report-tendency').textContent =
+      logCount > 0 ? (tendencyMap[dominantKey] || '') : 'まだログがありません。旅先をログすると、あなたの感性傾向が見えてきます。';
+
+    // 今週ログした場所
+    const placesHTML = logCount > 0
+      ? logs.map(l => `
+        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:8px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+          <div style="width:8px;height:8px;border-radius:50%;background:${axisColorsR[Object.entries({waku:l.axes?.waku||0,shizu:l.axes?.shizu||0,tsunagari:l.axes?.tsunagari||0,share:l.axes?.share||0}).sort((a,b)=>b[1]-a[1])[0][0]]};flex-shrink:0"></div>
+          <div style="flex:1">
+            <div style="font-size:15px;margin-bottom:2px">${l.place}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted)">${l.region || ''}${l.date ? ' · ' + l.date : ''} ${l.time || ''}</div>
+          </div>
+        </div>`).join('')
+      : '<div style="color:var(--text-muted);font-size:13px;padding:16px 0">まだログがありません</div>';
+    document.getElementById('report-places').innerHTML = placesHTML;
+
+    // 感性が近かった人（Supabaseから）
+    const allLogs = await fetchAllLogs();
+    let nearPeopleHTML = '<div style="color:var(--text-muted);font-size:13px;padding:16px 0">ログを増やすと表示されます</div>';
+
+    if (logCount > 0) {
+      const users = groupByUser(allLogs);
+      const myVec = avgAxes(logs);
+      const nearUsers = users
+        .map(u => ({ ...u, sim: cosineSim(myVec, avgAxes(u.logs)) }))
+        .filter(u => u.sim > 0.85)
+        .sort((a,b) => b.sim - a.sim)
+        .slice(0, 3);
+
+      document.getElementById('report-resonance-count').textContent = nearUsers.length;
+
+      if (nearUsers.length > 0) {
+        nearPeopleHTML = nearUsers.map(u => {
+          const recentLog = u.logs[u.logs.length - 1];
+          const uType = getPersona(avgAxes(u.logs));
+          return `
+            <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:7px;height:7px;border-radius:50%;background:var(--accent)"></div>
+                  <span style="font-size:14px">${u.name}</span>
+                  <span style="font-size:11px;color:var(--text-muted)">(${uType})</span>
+                </div>
+                <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent)">感性が近い</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-muted)">最近：${recentLog?.place || '—'} をログ</div>
+            </div>`;
+        }).join('');
+      }
+    }
+    document.getElementById('report-near-people').innerHTML = nearPeopleHTML;
+
+    // おすすめ旅先（未訪問・感性が近い人が高評価）
+    let recHTML = '<div style="color:var(--text-muted);font-size:13px;padding:16px 0">ログを増やすと表示されます</div>';
+    if (logCount > 0 && allLogs.length > 0) {
+      const visitedPlaces = new Set(logs.map(l => l.place));
+      const myVec = avgAxes(logs);
+      const placeScores = {};
+      allLogs.forEach(l => {
+        if (visitedPlaces.has(l.place)) return;
+        if (!placeScores[l.place]) placeScores[l.place] = { place: l.place, region: l.region, scores: [], axes: {} };
+        placeScores[l.place].scores.push(cosineSim(myVec, { waku:l.waku, shizu:l.shizu, tsunagari:l.tsunagari, share:l.share }));
+      });
+      const recs = Object.values(placeScores)
+        .map(p => ({ ...p, avg: p.scores.reduce((a,b)=>a+b,0)/p.scores.length }))
+        .sort((a,b) => b.avg - a.avg)
+        .slice(0, 3);
+
+      if (recs.length > 0) {
+        recHTML = recs.map((r,i) => `
+          <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:8px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);width:18px">${['①','②','③'][i]}</div>
+            <div style="flex:1">
+              <div style="font-size:15px;margin-bottom:2px">${r.place}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted)">${r.region}</div>
+            </div>
+            <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent)">感性一致 ${Math.round(r.avg*100)}%</div>
+          </div>`).join('');
+      }
+    }
+    document.getElementById('report-recommend').innerHTML = recHTML;
+
+    // メッセージ
+    const messages = [
+      'ログを重ねるほど、あなたの感性の輪郭がくっきりしてきます。\n次の旅も、ぜひ感性で記録してください。',
+      '旅は記録することで、記憶になる。\nあなたの感性地図は、少しずつ育っています。',
+      '数字では測れない旅の価値を、\nKANSEIはあなたと一緒に言語化していきます。',
+    ];
+    document.getElementById('report-message-text').textContent =
+      messages[Math.floor(Math.random() * messages.length)];
+
+    document.getElementById('report-headline').textContent =
+      typeName ? `${typeName}のあなたへ` : 'あなたの感性サマリー';
+  }
+
+  function openMap() {
+    goTo('screen-map');
+    // transitionが終わり、DOMのサイズが確定してから初期化する
+    setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          renderMap();
+        });
+      });
+    }, 340);
+  }
+
+  function renderMap() {
+    // myLogsの座標をプリセットで補正してからマップに使う
+    const placeList = PLACE_PRESETS;
+    const logsWithCoords = myLogs.map(l => {
+      const preset = placeList.find(p => p.name === l.place);
+      if (preset) return { ...l, lat: preset.lat, lng: preset.lng, region: preset.region };
+      return l;
+    }).filter(l => {
+      const lat = parseFloat(l.lat), lng = parseFloat(l.lng);
+      // 日本の範囲内（緯度20-46、経度122-154）のみ表示
+      return !isNaN(lat) && !isNaN(lng) && lat >= 20 && lat <= 46 && lng >= 122 && lng <= 154;
+    });
+
+    if (!logsWithCoords.length) {
+      document.getElementById('mapEmpty').style.display = 'flex';
+      return;
+    }
+
+    document.getElementById('mapEmpty').style.display = 'none';
+
+    // 既存インスタンスを完全破棄
+    if (leafletMap) {
+      leafletMap.off();
+      leafletMap.remove();
+      leafletMap = null;
+    }
+
+    // mapコンテナを作り直し（Leafletの内部状態リセット）
+    const mapArea = document.getElementById('mapArea');
+    const oldMap = document.getElementById('map');
+    if (oldMap) oldMap.remove();
+    const newMap = document.createElement('div');
+    newMap.id = 'map';
+    newMap.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
+    mapArea.appendChild(newMap);
+
+    // コンテナのサイズを確認してから初期化
+    const rect = newMap.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      // まだサイズが0なら少し待ってリトライ
+      setTimeout(renderMap, 200);
+      return;
+    }
+
+    try {
+      leafletMap = L.map('map', { zoomControl: true, attributionControl: true });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
+      }).addTo(leafletMap);
+
+      const axisColors = { koyo:'#c8a97e', solo:'#a891c8', atatakasa:'#d4818a', waku:'#c8a97e', shizu:'#7ea8c8', tsunagari:'#d4818a', share:'#a891c8' };
+      const axisLabelsM = { koyo:'高揚↔安らぎ', solo:'ひとり↔みんな', atatakasa:'あたたかさ', waku:'高揚', shizu:'安らぎ', tsunagari:'あたたかさ', share:'みんなと' };
+
+      logsWithCoords.forEach(log => {
+        const axes = log.axes || { koyo: log.koyo||log.waku||0, solo: log.solo||log.share||0, atatakasa: log.atatakasa||log.tsunagari||0 };
+        const dominant = Object.entries(axes).filter(([k])=>['koyo','solo','atatakasa'].includes(k)).sort((a,b) => b[1]-a[1])[0]?.[0] || 'koyo';
+        const marker = L.circleMarker([log.lat, log.lng], {
+          radius: 10, fillColor: axisColors[dominant],
+          color: '#0d0d0e', weight: 2, fillOpacity: 0.85
+        }).addTo(leafletMap);
+
+        const popupContent = `
+          <div style="background:#141416;padding:14px;border-radius:4px;min-width:180px;font-family:sans-serif">
+            <div style="font-size:15px;color:#e8e4dc;margin-bottom:10px;font-weight:500">${log.place}</div>
+            ${Object.entries(axes).map(([k,v]) => `
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:rgba(232,228,220,0.5);margin-bottom:3px">
+                <span>${axisLabelsM[k]}</span><span>${v}</span>
+              </div>
+              <div style="height:2px;background:rgba(255,255,255,0.08);border-radius:99px;margin-bottom:6px;overflow:hidden">
+                <div style="height:100%;width:${v*10}%;background:${axisColors[k]};border-radius:99px"></div>
+              </div>
+            `).join('')}
+            <div style="font-size:9px;color:rgba(232,228,220,0.3);margin-top:4px">${log.time || ''} にログ</div>
+          </div>`;
+        marker.bindPopup(popupContent, { className: 'kansei-popup', maxWidth: 220, closeButton: false });
+      });
+
+      const bounds = L.latLngBounds(logsWithCoords.map(l => [l.lat, l.lng]));
+      leafletMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+
+      // サイズ再計算（念のため）
+      setTimeout(() => { if (leafletMap) leafletMap.invalidateSize(); }, 100);
+
+    } catch(e) {
+      console.error('Map render error:', e);
+    }
+  }
+
+  async function openRecommend() {
+    goTo('screen-recommend');
+
+    // バッジ動的更新
+    const typeName = currentTypeName || (myLogs.length > 0 ? getPersona(avgAxes(myLogs)) : null);
+    if (typeName && PERSONA_TYPES[typeName]) {
+      const t = PERSONA_TYPES[typeName];
+      document.getElementById('rec-badge-icon').textContent = t.icon;
+      document.getElementById('rec-badge-label').textContent = typeName;
+      document.getElementById('rec-cluster-badge').style.background = t.grad;
+    } else {
+      document.getElementById('rec-badge-icon').textContent = '✦';
+      document.getElementById('rec-badge-label').textContent = 'タイプ診断中';
+    }
+
+    document.getElementById('recList').innerHTML = '<div style="text-align:center;padding:50px 24px;color:var(--text-muted);font-size:14px">読み込み中...</div>';
+    
+    const allLogs = await fetchAllLogs();
+    
+    if (allLogs.length === 0) {
+      document.getElementById('recList').innerHTML = '<div style="text-align:center;padding:50px 24px;color:var(--text-muted);font-size:14px;line-height:1.8">まだログがありません。<br>場所をログすると、ここに共鳴が見えてきます。</div>';
+      return;
+    }
+
+    // 自分のログがあれば使う、なければ全ログを表示
+    const myAxes = Object.values(axisValues).every(v=>v!==null) ? axisValues : null;
+    
+    if (myAxes) {
+      // SupabaseのデータをdummyUsers形式に変換
+      const userMap = {};
+      allLogs.forEach(log => {
+        if (!userMap[log.name]) userMap[log.name] = { name: log.name, logs: [] };
+        userMap[log.name].logs.push({
+          place: log.place, region: log.region,
+          axes: { waku: log.waku, shizu: log.shizu, tsunagari: log.tsunagari, share: log.share },
+          memo: log.memo
+        });
+      });
+      const users = Object.values(userMap);
+      recData = buildRecDataFromUsers(myAxes, users);
+    } else {
+      recData = buildRecDataFromLogs(allLogs);
+    }
+    
+    renderRec();
+  }
+
+  function renderRadarChart(vec, avgVec) {
+    const svg = document.getElementById('radarChart');
+    if (!svg) return;
+    // SVG 180×180, center 90,90, chart radius 62, label radius 82
+    const cx = 90, cy = 90, r = 62, rLabel = 82;
+    const labels = ['高揚', '安らぎ', 'あたたかさ', 'ひとり↔みんな'];
+    const keys   = ['koyo', 'shizu', 'atatakasa', 'solo'];
+    const colors = ['#b8935a', '#5a8aaa', '#c4626e', '#8a72b0'];
+    // 4軸：上・右・下・左
+    const angles = [
+      -Math.PI / 2,        // 高揚: 上
+       0,                  // ひとり↔みんな: 右
+       Math.PI / 2,        // あたたかさ: 下
+       Math.PI             // 安らぎ: 左
+    ];
+
+    function pt(angle, val, maxR) {
+      const rr = (val / 10) * maxR;
+      return { x: cx + rr * Math.cos(angle), y: cy + rr * Math.sin(angle) };
+    }
+    function pts(val, maxR) {
+      return angles.map(a => { const p = pt(a, val, maxR); return `${p.x.toFixed(1)},${p.y.toFixed(1)}`; }).join(' ');
+    }
+    function dataPts(vec, maxR) {
+      return angles.map((a,i) => { const p = pt(a, vec[keys[i]] || 0, maxR); return `${p.x.toFixed(1)},${p.y.toFixed(1)}`; }).join(' ');
+    }
+
+    let html = '';
+
+    // 背景グリッド（薄い菱形）
+    [2, 4, 6, 8, 10].forEach(lv => {
+      html += `<polygon points="${pts(lv, r)}" fill="none" stroke="rgba(0,0,0,0.07)" stroke-width="1"/>`;
+    });
+    // 軸線
+    angles.forEach(a => {
+      const p = pt(a, 10, r);
+      html += `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" stroke="rgba(0,0,0,0.08)" stroke-width="1"/>`;
+    });
+    // 平均（薄く）
+    if (avgVec) {
+      html += `<polygon points="${dataPts(avgVec, r)}" fill="rgba(184,147,90,0.07)" stroke="rgba(184,147,90,0.18)" stroke-width="1.5" stroke-dasharray="3,3"/>`;
+    }
+    // 自分の感性ポリゴン
+    html += `<polygon points="${dataPts(vec, r)}" fill="rgba(184,147,90,0.16)" stroke="rgba(184,147,90,0.85)" stroke-width="2"/>`;
+    // 頂点ドット
+    angles.forEach((a, i) => {
+      const p = pt(a, vec[keys[i]] || 0, r);
+      html += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="${colors[i]}" stroke="#fff" stroke-width="1.5"/>`;
+    });
+    // ラベル（rLabel = 82 なのでSVG端まで余裕あり）
+    angles.forEach((a, i) => {
+      const p = pt(a, 10, rLabel);
+      // アンカー調整
+      let anchor = 'middle';
+      if (Math.cos(a) > 0.3) anchor = 'start';
+      else if (Math.cos(a) < -0.3) anchor = 'end';
+      html += `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" text-anchor="${anchor}" dominant-baseline="middle" font-family="'Shippori Mincho',serif" font-size="10" fill="rgba(26,24,20,0.55)">${labels[i]}</text>`;
+    });
+    // スコア数値（各頂点の隣）
+    angles.forEach((a, i) => {
+      const val = vec[keys[i]] || 0;
+      if (val === 0) return;
+      const p = pt(a, val, r);
+      const offset = { x: Math.cos(a) * 14, y: Math.sin(a) * 14 };
+      html += `<text x="${(p.x + offset.x).toFixed(1)}" y="${(p.y + offset.y).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-family="'DM Mono',monospace" font-size="9" fill="${colors[i]}" font-weight="500">${val.toFixed(1)}</text>`;
+    });
+
+    svg.innerHTML = html;
+  }
+
+  // openReport内でレーダーチャートを描画（avgVec確定後に呼ぶ）
+
+  function animateCount(id,target,duration) {
+    const el=document.getElementById(id);
+    const startTime=performance.now();
+    function step(now) {
+      const p=Math.min((now-startTime)/duration,1);
+      const e=1-Math.pow(1-p,3);
+      el.textContent=Math.round(target*e);
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ---- DIAGNOSIS ----
+  const diagScores = { waku:0, shizu:0, tsunagari:0, share:0 };
+  let diagCompleted = false;
+
+  // 診断タイプ → ペルソナ名マッピング
+  const DIAG_TYPE_MAP = {
+    koyo: 'ひとり探検家',
+    shizu: '余白旅人',
+    atatakasa: 'ただいま旅人',
+    solo: '感動を届ける人'
+  };
+
+  function diagNext(step) {
+    document.querySelectorAll('.diag-step').forEach(s => s.classList.remove('active'));
+    const next = document.getElementById('diag-step-' + step);
+    if (next) next.classList.add('active');
+  }
+
+  function diagAnswer(qNum, axis, el) {
+    // 選択ハイライト（同じQ内の他を解除）
+    el.closest('.diag-options').querySelectorAll('.diag-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+
+    // スコア加算
+    diagScores[axis] += 1;
+
+    // 少し待ってから次へ（選択を見せる）
+    setTimeout(() => {
+      if (qNum < 3) {
+        diagNext(qNum + 1);
+      } else {
+        showDiagnosisResult();
+      }
+    }, 320);
+  }
+
+  function showDiagnosisResult() {
+    // ローディング演出
+    diagNext('loading');
+
+    // 最高スコア軸を特定
+    const sorted = Object.entries(diagScores).sort((a,b) => b[1]-a[1]);
+    const topAxis = sorted[0][0];
+    const typeName = DIAG_TYPE_MAP[topAxis];
+    const t = PERSONA_TYPES[typeName];
+
+    // 結果をセット
+    document.getElementById('diag-r-icon').textContent = t.icon;
+    document.getElementById('diag-r-type').textContent = typeName;
+    document.getElementById('diag-r-keyword').textContent = t.keyword;
+    document.getElementById('diag-r-desc').textContent = t.desc;
+
+    // 背景色をタイプカラーに
+    document.getElementById('diag-step-result').style.background = t.grad;
+
+    // 0.6秒後に結果画面へ
+    setTimeout(() => diagNext('result'), 600);
+  }
+
+  function finishDiagnosis() {
+    // 最高スコア軸を特定（再計算）
+    const sorted = Object.entries(diagScores).sort((a,b) => b[1]-a[1]);
+    const topAxis = sorted[0][0];
+    const typeName = DIAG_TYPE_MAP[topAxis];
+
+    // localStorageに保存
+    localStorage.setItem('kansei_diagnosed', 'true');
+    localStorage.setItem('kansei_diagnosis_type', typeName);
+
+    // currentTypeNameに反映
+    currentTypeName = typeName;
+    diagCompleted = true;
+
+    // 診断画面を閉じる
+    const diag = document.getElementById('diag-screen');
+    diag.style.opacity = '0';
+    setTimeout(() => {
+      diag.style.display = 'none';
+      // ホーム画面を確実にアクティブに
+      document.getElementById('screen-home').classList.add('active');
+    }, 400);
+
+    // ホームのタイプ表示を更新
+    updateHomeTypeDisplay();
+
+    // ログ画面へ誘導
+    setTimeout(() => goTo('screen-place-log'), 500);
+  }
+
+  // ホームのタイプカード表示を更新（診断タイプ＋ログタイプ並列）
+  function updateHomeTypeDisplay() {
+    const diagType = localStorage.getItem('kansei_diagnosis_type');
+    const logType = myLogs.length >= 3 ? getPersona(avgAxes(myLogs)) : null;
+    const card = document.getElementById('stat-type-display');
+
+    if (!diagType && !logType) {
+      card.innerHTML = `
+        <div class="stat-num" id="stat-cluster" style="font-size:13px;line-height:1.3">—</div>
+        <div class="stat-label">あなたの<br>タイプ <span style="font-size:9px">▸</span></div>`;
+      return;
+    }
+
+    if (diagType && !logType) {
+      // 診断タイプのみ
+      const t = PERSONA_TYPES[diagType];
+      card.innerHTML = `
+        <div style="font-size:16px;margin-bottom:2px">${t ? t.icon : '✦'}</div>
+        <div class="stat-num" id="stat-cluster" style="font-size:12px;line-height:1.3;color:${t ? t.color : 'var(--accent)'}">${diagType}</div>
+        <div class="stat-label" style="font-size:9px">診断タイプ <span style="font-size:8px">▸</span></div>`;
+      return;
+    }
+
+    if (diagType && logType) {
+      // 両方表示
+      const dt = PERSONA_TYPES[diagType];
+      const lt = PERSONA_TYPES[logType];
+      if (diagType === logType) {
+        // 一致している場合
+        card.innerHTML = `
+          <div style="font-size:16px;margin-bottom:2px">${lt ? lt.icon : '✦'}</div>
+          <div class="stat-num" id="stat-cluster" style="font-size:11px;line-height:1.3;color:${lt ? lt.color : 'var(--accent)'}">${logType}</div>
+          <div class="stat-label" style="font-size:9px">ログで確認 <span style="font-size:8px">▸</span></div>`;
+      } else {
+        // 変化している場合（これが一番面白い）
+        card.innerHTML = `
+          <div style="font-size:9px;color:var(--text-muted);font-family:'DM Mono',monospace;letter-spacing:0.08em;margin-bottom:3px">感性が変化中</div>
+          <div style="font-size:10px;color:var(--text-muted)">${dt ? dt.icon : ''} ${diagType}</div>
+          <div style="font-size:9px;color:var(--text-muted);margin:1px 0">↓</div>
+          <div id="stat-cluster" style="font-size:11px;font-weight:500;color:${lt ? lt.color : 'var(--accent)'};">${lt ? lt.icon : ''} ${logType}</div>
+          <div class="stat-label" style="font-size:8px">タイプ <span>▸</span></div>`;
+        currentTypeName = logType;
+      }
+    }
+  }
+
+  // ---- LOCAL STORAGE ----
+  // 名前を記憶
+  const savedName = localStorage.getItem('kansei_name');
+  if (savedName) {
+    document.getElementById('nameInput').value = savedName;
+  }
+
+  // ログを復元
+  const savedLogs = localStorage.getItem('kansei_logs');
+  if (savedLogs) {
+    try {
+      const parsed = JSON.parse(savedLogs);
+      myLogs.push(...parsed);
+      totalLogs = myLogs.length;
+      document.getElementById('stat-logs').textContent = totalLogs;
+    } catch(e) {}
+  }
+
+  // 診断済みチェック → 未診断なら診断画面を表示
+  const alreadyDiagnosed = localStorage.getItem('kansei_diagnosed');
+  if (!alreadyDiagnosed) {
+    // 初回：診断画面を表示
+    document.getElementById('screen-home').classList.remove('active');
+    const diagScreen = document.getElementById('diag-screen');
+    diagScreen.style.display = 'flex';
+    setTimeout(() => diagScreen.classList.add('active'), 50);
+  } else {
+    // 診断済み：ホームのタイプ表示を更新
+    currentTypeName = localStorage.getItem('kansei_diagnosis_type');
+    updateHomeTypeDisplay();
+  }
+
+  updateScoreDots();
+
+</script>
+</body>
+</html>
+</body>
+</html>
