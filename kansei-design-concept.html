@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KANSEI — デザインコンセプト</title>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: #0d0c0a;
+  color: #e8e4de;
+  font-family: 'Shippori Mincho', serif;
+  min-height: 100vh;
+}
+
+/* ===== NAV ===== */
+.concept-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  gap: 0;
+  background: #0d0c0a;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.concept-tab {
+  flex: 1;
+  padding: 18px 12px;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: rgba(232,228,222,0.35);
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  border-bottom: 2px solid transparent;
+}
+.concept-tab.active {
+  color: #e8e4de;
+  border-bottom-color: #c8a97e;
+}
+
+/* ===== PAGES ===== */
+.page { display: none; padding-top: 60px; min-height: 100vh; }
+.page.active { display: block; }
+
+/* ==============================
+   CONCEPT B — 詩的ビジュアライゼーション
+   ============================== */
+#page-b {
+  background: #080807;
+  overflow: hidden;
+}
+
+.b-hero {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* 星座状の感性マップ */
+.constellation-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.b-center-text {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+}
+.b-type-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  color: rgba(200,169,126,0.6);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.b-type-name {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 32px;
+  font-weight: 400;
+  color: #e8e4de;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+.b-type-tagline {
+  font-size: 13px;
+  color: rgba(232,228,222,0.45);
+  letter-spacing: 0.06em;
+  line-height: 1.8;
+}
+
+/* ログカード — 波形スタイル */
+.b-log-section {
+  padding: 60px 24px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.b-log-card {
+  position: relative;
+  margin-bottom: 48px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.7s ease forwards;
+}
+.b-log-card:nth-child(1) { animation-delay: 0.1s; }
+.b-log-card:nth-child(2) { animation-delay: 0.25s; }
+.b-log-card:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.b-log-date {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: rgba(200,169,126,0.5);
+  margin-bottom: 8px;
+}
+.b-log-place {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 22px;
+  color: #e8e4de;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.b-log-region {
+  font-size: 11px;
+  color: rgba(232,228,222,0.35);
+  letter-spacing: 0.08em;
+  margin-bottom: 20px;
+}
+.b-log-memo {
+  font-size: 14px;
+  line-height: 2;
+  color: rgba(232,228,222,0.7);
+  letter-spacing: 0.04em;
+  font-style: italic;
+  margin-bottom: 24px;
+  padding-left: 16px;
+  border-left: 1px solid rgba(200,169,126,0.25);
+}
+
+/* 波形バー */
+.b-wave-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 48px;
+  margin-bottom: 8px;
+}
+.b-wave-bar {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.8s ease;
+}
+.b-wave-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  color: rgba(232,228,222,0.25);
+  letter-spacing: 0.1em;
+}
+
+/* 問いかけカード */
+.b-question-card {
+  background: rgba(200,169,126,0.04);
+  border: 1px solid rgba(200,169,126,0.12);
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 48px;
+  position: relative;
+  overflow: hidden;
+}
+.b-question-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200,169,126,0.4), transparent);
+}
+.b-question-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: rgba(200,169,126,0.5);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.b-question-text {
+  font-size: 15px;
+  line-height: 2;
+  color: rgba(232,228,222,0.8);
+  letter-spacing: 0.04em;
+  margin-bottom: 20px;
+}
+.b-question-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(232,228,222,0.12);
+  color: #e8e4de;
+  font-family: 'Shippori Mincho', serif;
+  font-size: 14px;
+  padding: 10px 0;
+  outline: none;
+  letter-spacing: 0.04em;
+}
+.b-question-input::placeholder {
+  color: rgba(232,228,222,0.2);
+}
+
+/* ==============================
+   CONCEPT C — 旅の質感・和紙・活版
+   ============================== */
+#page-c {
+  background: #f5f0e8;
+  color: #2a2520;
+}
+
+/* 和紙テクスチャ */
+#page-c::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+.c-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ヘッダー — 活版印刷風 */
+.c-header {
+  padding: 48px 28px 36px;
+  border-bottom: 1px solid rgba(42,37,32,0.1);
+  position: relative;
+}
+.c-header-kana {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.3em;
+  color: rgba(42,37,32,0.35);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.c-header-title {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #2a2520;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+.c-header-sub {
+  font-size: 12px;
+  color: rgba(42,37,32,0.45);
+  letter-spacing: 0.08em;
+  margin-top: 8px;
+  line-height: 1.7;
+}
+
+/* 朱印スタンプ的な要素 */
+.c-stamp {
+  position: absolute;
+  top: 44px;
+  right: 28px;
+  width: 64px;
+  height: 64px;
+  border: 2px solid rgba(180,60,40,0.5);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-4deg);
+  color: rgba(180,60,40,0.7);
+}
+.c-stamp-icon { font-size: 20px; }
+.c-stamp-text {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+}
+
+/* ログエントリ — 旅の記録帳スタイル */
+.c-log-list {
+  padding: 0 28px;
+}
+
+.c-log-entry {
+  padding: 28px 0;
+  border-bottom: 1px solid rgba(42,37,32,0.07);
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 20px;
+  opacity: 0;
+  animation: slideIn 0.5s ease forwards;
+}
+.c-log-entry:nth-child(1) { animation-delay: 0.05s; }
+.c-log-entry:nth-child(2) { animation-delay: 0.15s; }
+.c-log-entry:nth-child(3) { animation-delay: 0.25s; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.c-log-sidebar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 4px;
+}
+.c-log-day {
+  font-family: 'DM Mono', monospace;
+  font-size: 22px;
+  font-weight: 300;
+  color: rgba(42,37,32,0.25);
+  line-height: 1;
+}
+.c-log-month {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: rgba(42,37,32,0.2);
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+.c-log-line {
+  flex: 1;
+  width: 1px;
+  background: rgba(42,37,32,0.08);
+  margin-top: 8px;
+}
+
+.c-log-body {}
+.c-log-place-name {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2a2520;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+.c-log-region-tag {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  color: rgba(42,37,32,0.4);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+/* 感性バー — 活版風 */
+.c-axis-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.c-axis-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: rgba(42,37,32,0.4);
+  width: 60px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+.c-axis-dots {
+  display: flex;
+  gap: 3px;
+}
+.c-axis-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  border: 1px solid rgba(42,37,32,0.15);
+}
+.c-axis-dot.filled {
+  background: #2a2520;
+  border-color: #2a2520;
+}
+.c-axis-dot.filled.warm {
+  background: #b8793a;
+  border-color: #b8793a;
+}
+.c-axis-dot.filled.cool {
+  background: #5a8aaa;
+  border-color: #5a8aaa;
+}
+.c-axis-dot.filled.rose {
+  background: #c4626e;
+  border-color: #c4626e;
+}
+
+.c-log-memo {
+  font-size: 13px;
+  line-height: 1.9;
+  color: rgba(42,37,32,0.6);
+  letter-spacing: 0.04em;
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: rgba(42,37,32,0.03);
+  border-left: 2px solid rgba(184,121,58,0.3);
+  font-style: italic;
+}
+
+/* 問いかけ — 巻紙風 */
+.c-question-section {
+  margin: 32px 28px;
+  padding: 28px 24px;
+  background: rgba(184,121,58,0.06);
+  border: 1px solid rgba(184,121,58,0.15);
+  border-radius: 2px;
+  position: relative;
+}
+.c-question-section::before,
+.c-question-section::after {
+  content: '';
+  position: absolute;
+  left: 16px; right: 16px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(184,121,58,0.2), transparent);
+}
+.c-question-section::before { top: 8px; }
+.c-question-section::after { bottom: 8px; }
+
+.c-question-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: rgba(184,121,58,0.6);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.c-question-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(184,121,58,0.15);
+}
+.c-question-text {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 16px;
+  color: #2a2520;
+  line-height: 2;
+  letter-spacing: 0.04em;
+  margin-bottom: 20px;
+}
+.c-question-input {
+  width: 100%;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(42,37,32,0.1);
+  border-radius: 2px;
+  color: #2a2520;
+  font-family: 'Shippori Mincho', serif;
+  font-size: 14px;
+  padding: 12px 14px;
+  outline: none;
+  letter-spacing: 0.04em;
+  line-height: 1.8;
+}
+.c-question-input::placeholder {
+  color: rgba(42,37,32,0.25);
+}
+
+/* 古地図風マップヒント */
+.c-map-hint {
+  margin: 0 28px 40px;
+  padding: 20px;
+  border: 1px solid rgba(42,37,32,0.08);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255,255,255,0.4);
+}
+.c-map-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(184,121,58,0.1);
+  border: 1px solid rgba(184,121,58,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.c-map-text {
+  font-size: 12px;
+  color: rgba(42,37,32,0.5);
+  line-height: 1.8;
+  letter-spacing: 0.03em;
+}
+.c-map-place {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 14px;
+  color: #2a2520;
+  display: block;
+  margin-bottom: 2px;
+}
+
+</style>
+</head>
+<body>
+
+<nav class="concept-nav">
+  <div class="concept-tab active" onclick="showPage('b')">B — 詩的ビジュアル</div>
+  <div class="concept-tab" onclick="showPage('c')">C — 旅の質感</div>
+</nav>
+
+<!-- ===== PAGE B ===== -->
+<div id="page-b" class="page active">
+
+  <div class="b-hero">
+    <canvas class="constellation-canvas" id="constellationCanvas"></canvas>
+    <div class="b-center-text">
+      <div class="b-type-label">感性タイプ · 12回のログより</div>
+      <div class="b-type-name">深みへ還る人</div>
+      <div class="b-type-tagline">ひとりでいることが、豊かさ</div>
+    </div>
+  </div>
+
+  <div class="b-log-section">
+
+    <div class="b-log-card">
+      <div class="b-log-date">2026 · 03 · 06 — 長崎</div>
+      <div class="b-log-place">グラバー園</div>
+      <div class="b-log-region">長崎県</div>
+      <div class="b-log-memo">「歴史に詳しい人と行きたい。落ち着いてるけど、なんか誰かと話したい。」</div>
+      <div class="b-wave-container" id="wave1"></div>
+      <div class="b-wave-label">
+        <span>安らぎ</span><span>あたたかさ</span><span>ひとり</span>
+      </div>
+    </div>
+
+    <div class="b-log-card">
+      <div class="b-log-date">2026 · 02 · 22 — 佐賀</div>
+      <div class="b-log-place">嬉野温泉</div>
+      <div class="b-log-region">佐賀県</div>
+      <div class="b-log-memo">「最高の泉質。日本三大美人の湯。おっちゃんが気さくに話しかけてくれた。」</div>
+      <div class="b-wave-container" id="wave2"></div>
+      <div class="b-wave-label">
+        <span>安らぎ</span><span>あたたかさ</span><span>ひとり</span>
+      </div>
+    </div>
+
+    <div class="b-question-card">
+      <div class="b-question-label">問いかけ · 12回目のログ</div>
+      <div class="b-question-text">
+        最近、「誰かと話したい」気持ちがログに出てきている。<br>ひとり旅の中で、人との距離感が変わってきたのかも。
+      </div>
+      <input class="b-question-input" placeholder="ここに答えなくていい。ただ、思ったことを。" />
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== PAGE C ===== -->
+<div id="page-c" class="page">
+  <div class="c-content">
+
+    <div class="c-header">
+      <div class="c-header-kana">KANSEI · 感性の記録</div>
+      <div class="c-header-title">はると<br>の旅</div>
+      <div class="c-header-sub">12回のログ · 深みへ還る人</div>
+      <div class="c-stamp">
+        <div class="c-stamp-icon">◌</div>
+        <div class="c-stamp-text">深みへ</div>
+      </div>
+    </div>
+
+    <div class="c-log-list">
+
+      <div class="c-log-entry">
+        <div class="c-log-sidebar">
+          <div class="c-log-day">06</div>
+          <div class="c-log-month">Mar</div>
+          <div class="c-log-line"></div>
+        </div>
+        <div class="c-log-body">
+          <div class="c-log-place-name">グラバー園</div>
+          <div class="c-log-region-tag">長崎県</div>
+          <div class="c-axis-row">
+            <div class="c-axis-name">高揚</div>
+            <div class="c-axis-dots" id="dots-koyo-1"></div>
+          </div>
+          <div class="c-axis-row">
+            <div class="c-axis-name">あたたかさ</div>
+            <div class="c-axis-dots" id="dots-warm-1"></div>
+          </div>
+          <div class="c-axis-row">
+            <div class="c-axis-name">ひとり</div>
+            <div class="c-axis-dots" id="dots-solo-1"></div>
+          </div>
+          <div class="c-log-memo">歴史に詳しい人と行きたい。落ち着いてるけど、なんか誰かと話したい。</div>
+        </div>
+      </div>
+
+      <div class="c-log-entry">
+        <div class="c-log-sidebar">
+          <div class="c-log-day">22</div>
+          <div class="c-log-month">Feb</div>
+          <div class="c-log-line"></div>
+        </div>
+        <div class="c-log-body">
+          <div class="c-log-place-name">嬉野温泉</div>
+          <div class="c-log-region-tag">佐賀県</div>
+          <div class="c-axis-row">
+            <div class="c-axis-name">高揚</div>
+            <div class="c-axis-dots" id="dots-koyo-2"></div>
+          </div>
+          <div class="c-axis-row">
+            <div class="c-axis-name">あたたかさ</div>
+            <div class="c-axis-dots" id="dots-warm-2"></div>
+          </div>
+          <div class="c-axis-row">
+            <div class="c-axis-name">ひとり</div>
+            <div class="c-axis-dots" id="dots-solo-2"></div>
+          </div>
+          <div class="c-log-memo">最高の泉質。おっちゃんが気さくに話しかけてくれた。二人くらいで行くのがいいかな。</div>
+        </div>
+      </div>
+
+      <div class="c-log-entry">
+        <div class="c-log-sidebar">
+          <div class="c-log-day">14</div>
+          <div class="c-log-month">Feb</div>
+          <div class="c-log-line"></div>
+        </div>
+        <div class="c-log-body">
+          <div class="c-log-place-name">白川郷</div>
+          <div class="c-log-region-tag">岐阜県</div>
+          <div class="c-axis-row">
+            <div class="c-axis-name">高揚</div>
+            <div class="c-axis-dots" id="dots-koyo-3"></div>
+          </div>
+          <div class="c-axis-row">
+            <div class="c-axis-name">あたたかさ</div>
+            <div class="c-axis-dots" id="dots-warm-3"></div>
+          </div>
+          <div class="c-axis-row">
+            <div class="c-axis-name">ひとり</div>
+            <div class="c-axis-dots" id="dots-solo-3"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="c-question-section">
+      <div class="c-question-label">問いかけ</div>
+      <div class="c-question-text">最近、「誰かと話したい」気持ちがログに出てきている。<br>ひとり旅の中で、人との距離感が変わってきたのかも。</div>
+      <textarea class="c-question-input" rows="3" placeholder="ここに答えなくていい。ただ、思ったことを。"></textarea>
+    </div>
+
+    <div class="c-map-hint">
+      <div class="c-map-dot">◎</div>
+      <div class="c-map-text">
+        <span class="c-map-place">長湯温泉</span>
+        感性が近いユーザーが「あたたかさ 9」で記録していた場所
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.concept-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'b') initConstellation();
+}
+
+// ===== Constellation Canvas =====
+function initConstellation() {
+  const canvas = document.getElementById('constellationCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+
+  // 感性の星座点（過去ログ）
+  const logs = [
+    { koyo:3, solo:2, atatakasa:7, label:'白川郷' },
+    { koyo:4, solo:3, atatakasa:9, label:'嬉野温泉' },
+    { koyo:2, solo:2, atatakasa:5, label:'グラバー園' },
+    { koyo:5, solo:4, atatakasa:6, label:'由布院' },
+    { koyo:3, solo:1, atatakasa:4, label:'知床' },
+    { koyo:6, solo:5, atatakasa:7, label:'嵐山' },
+    { koyo:2, solo:2, atatakasa:8, label:'妙見温泉' },
+    { koyo:4, solo:3, atatakasa:6, label:'奥入瀬' },
+  ];
+
+  // 3軸を3D→2D投影
+  function project(koyo, solo, atatakasa) {
+    const r = 140;
+    const x = cx + (solo - 5) / 5 * r * 0.8 + (koyo - 5) / 5 * r * 0.3;
+    const y = cy - (atatakasa - 5) / 5 * r * 0.7 + (koyo - 5) / 5 * r * 0.4;
+    return { x, y };
+  }
+
+  // 背景グラデーション
+  const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W,H)/1.5);
+  bg.addColorStop(0, 'rgba(30,25,15,0.0)');
+  bg.addColorStop(1, 'rgba(8,8,7,0.0)');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // 背景の微細な星
+  for (let i = 0; i < 120; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
+    const r = Math.random() * 1.2;
+    const a = Math.random() * 0.3 + 0.05;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(232,228,222,${a})`;
+    ctx.fill();
+  }
+
+  // 中心点（現在の自分）
+  const centerPos = project(3.5, 2.5, 6.5);
+
+  // 星座の線
+  logs.forEach((l, i) => {
+    const pos = project(l.koyo, l.solo, l.atatakasa);
+    const next = logs[(i+1) % logs.length];
+    const posNext = project(next.koyo, next.solo, next.atatakasa);
+
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    ctx.lineTo(posNext.x, posNext.y);
+    ctx.strokeStyle = 'rgba(200,169,126,0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 中心への線
+    ctx.beginPath();
+    ctx.moveTo(centerPos.x, centerPos.y);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.strokeStyle = 'rgba(200,169,126,0.05)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  });
+
+  // ログ点
+  logs.forEach(l => {
+    const pos = project(l.koyo, l.solo, l.atatakasa);
+    const size = 2 + l.atatakasa * 0.4;
+
+    // グロー
+    const glow = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, size * 4);
+    glow.addColorStop(0, 'rgba(200,169,126,0.2)');
+    glow.addColorStop(1, 'rgba(200,169,126,0)');
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, size * 4, 0, Math.PI*2);
+    ctx.fillStyle = glow;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, size, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(200,169,126,${0.4 + l.atatakasa * 0.05})`;
+    ctx.fill();
+
+    // ラベル
+    ctx.font = '9px DM Mono';
+    ctx.fillStyle = 'rgba(200,169,126,0.35)';
+    ctx.letterSpacing = '0.1em';
+    ctx.fillText(l.label, pos.x + size + 5, pos.y + 3);
+  });
+
+  // 現在地（中心の自分）
+  const glowC = ctx.createRadialGradient(centerPos.x, centerPos.y, 0, centerPos.x, centerPos.y, 24);
+  glowC.addColorStop(0, 'rgba(232,228,222,0.3)');
+  glowC.addColorStop(1, 'rgba(232,228,222,0)');
+  ctx.beginPath();
+  ctx.arc(centerPos.x, centerPos.y, 24, 0, Math.PI*2);
+  ctx.fillStyle = glowC;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(centerPos.x, centerPos.y, 5, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(232,228,222,0.9)';
+  ctx.fill();
+
+  // パルスリング
+  let pulse = 0;
+  function animatePulse() {
+    pulse = (pulse + 0.02) % 1;
+    const pr = 8 + pulse * 20;
+    const pa = (1 - pulse) * 0.4;
+
+    // 再描画が重いので中心周辺だけ
+    ctx.beginPath();
+    ctx.arc(centerPos.x, centerPos.y, pr, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(232,228,222,${pa})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    requestAnimationFrame(animatePulse);
+  }
+  animatePulse();
+}
+
+// ===== Wave Bars (B) =====
+function renderWave(id, values) {
+  const container = document.getElementById(id);
+  if (!container) return;
+  const colors = ['rgba(90,138,170,', 'rgba(196,98,110,', 'rgba(200,169,126,'];
+  const bars = 24;
+  container.innerHTML = '';
+  for (let i = 0; i < bars; i++) {
+    const axisIdx = Math.floor(i / (bars / values.length));
+    const base = values[axisIdx];
+    const noise = (Math.random() - 0.5) * 15;
+    const h = Math.max(4, base * 4 + noise);
+    const div = document.createElement('div');
+    div.className = 'b-wave-bar';
+    div.style.height = h + 'px';
+    div.style.background = colors[axisIdx % colors.length] + (0.4 + base/10*0.5) + ')';
+    container.appendChild(div);
+  }
+}
+
+// ===== Dots (C) =====
+function renderDots(id, value, cls) {
+  const container = document.getElementById(id);
+  if (!container) return;
+  for (let i = 0; i < 10; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'c-axis-dot' + (i < value ? ` filled ${cls}` : '');
+    container.appendChild(dot);
+  }
+}
+
+// Init
+initConstellation();
+renderWave('wave1', [3, 7, 2]);
+renderWave('wave2', [2, 9, 3]);
+
+renderDots('dots-koyo-1', 3, 'warm');
+renderDots('dots-warm-1', 7, 'rose');
+renderDots('dots-solo-1', 2, 'cool');
+renderDots('dots-koyo-2', 2, 'warm');
+renderDots('dots-warm-2', 9, 'rose');
+renderDots('dots-solo-2', 3, 'cool');
+renderDots('dots-koyo-3', 4, 'warm');
+renderDots('dots-warm-3', 8, 'rose');
+renderDots('dots-solo-3', 2, 'cool');
+
+window.addEventListener('resize', () => {
+  const canvas = document.getElementById('constellationCanvas');
+  if (canvas && document.getElementById('page-b').classList.contains('active')) {
+    initConstellation();
+  }
+});
+</script>
+</body>
+</html>
